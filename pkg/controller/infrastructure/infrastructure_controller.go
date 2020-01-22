@@ -124,11 +124,6 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
 	}
 
 	// Check if this Pod already exists
