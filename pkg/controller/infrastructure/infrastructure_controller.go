@@ -155,13 +155,14 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 // newConfigMapForCR returns a configMap with the same name/namespace as the cr
 func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
+
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-map",
 			Namespace: cr.Namespace,
 		},
 		BinaryData: map[string][]byte {
-			"template.yml": cr.Spec.Template,
+			"template.yml": []byte(cr.Spec.Template),
 			},
 	}
 }
