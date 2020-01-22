@@ -52,7 +52,6 @@ spec:
             name:
               type: string
             template:
-              format: byte
               type: string
           required:
           - cloud

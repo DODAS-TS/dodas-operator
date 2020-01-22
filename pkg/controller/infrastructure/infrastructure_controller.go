@@ -120,7 +120,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	if err != nil && errors.IsNotFound(err) {		
 
 		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "Pod.Name", configMap.Name)
-		err = r.client.Create(context.TODO(), pod)
+		err = r.client.Create(context.TODO(), configMap)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -161,8 +161,8 @@ func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
 			Name:      cr.Name + "-map",
 			Namespace: cr.Namespace,
 		},
-		BinaryData: map[string][]byte {
-			"template.yml": []byte(cr.Spec.Template),
+		Data: map[string]string {
+			"template.yml": cr.Spec.Template,
 			},
 	}
 }
