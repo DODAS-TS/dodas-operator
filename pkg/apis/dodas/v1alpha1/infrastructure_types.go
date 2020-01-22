@@ -22,7 +22,7 @@ type IMAuthFields struct {
 type InfrastructureSpec struct {
 	Name      string             `json:"name"`
 	Image     string             `json:"image"`
-	CloudAuth CloudAuthFields `json:"cloud"`
+	CloudAuth CloudAuthFields `json:"cloud,omitempty"`
 	ImAuth    IMAuthFields `json:"im,omitempty"`
 	Template string `json:"template"`
 	AuthFile  string `json:"authFile,omitempty"`

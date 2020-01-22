@@ -4,7 +4,7 @@ metadata:
   name: example-infrastructure
 spec:
   name: test
-  image: busybox
+  image: dodasts/dodas-client:v0.3.3 
   cloud:
     host: test
   im:

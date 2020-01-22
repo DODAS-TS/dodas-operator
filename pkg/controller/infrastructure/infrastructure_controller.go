@@ -226,16 +226,20 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 					Name:    cr.Spec.Name,
 					Image:   cr.Spec.Image,
 					Env: envs,
-					Args:[]string{
+					Command: []string{
+						"dodas",
 						"--config",
 						"/etc/dodas.yml",
 						"creat",
 						"/etc/template.yml",
+						"&&",
+						"sleep",
+						"infinity",
 					},
 					VolumeMounts:  []corev1.VolumeMount{
 						{
 							Name: "config",
-							MountPath: "/etc/",
+							MountPath: "/etc/configs",
 						},
 					},
 				},

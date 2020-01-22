@@ -56,7 +56,6 @@ spec:
             template:
               type: string
           required:
-          - cloud
           - image
           - name
           - template
