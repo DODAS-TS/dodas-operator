@@ -12,3 +12,5 @@ spec:
   template: |
     asdasd
     asdasd
+  authFile: |
+    asdasd

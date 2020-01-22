@@ -53,6 +53,8 @@ spec:
               type: string
             template:
               type: string
+            authFile:
+              type: string
           required:
           - cloud
           - image

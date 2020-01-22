@@ -101,26 +101,40 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	configMap := newConfigMapForCR(instance)
+	dodasConfig := newDODASConfigForCR(instance)
+
+	templateConfig := newConfigMapForCR(instance)
 
 	// Define a new Pod object
-	pod := newPodForCR(instance, configMap)
+	pod := newPodForCR(instance, templateConfig)
 
 	// Set Infrastructure instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
-	if err := controllerutil.SetControllerReference(instance, configMap, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, templateConfig, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Check if this ConfigMap already exists
-	found := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: configMap.Name, Namespace: configMap.Namespace}, found)
+	// Check if this template ConfigMap already exists
+	foundTemplate := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: templateConfig.Name, Namespace: templateConfig.Namespace}, foundTemplate)
 	if err != nil && errors.IsNotFound(err) {		
 
-		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "Pod.Name", configMap.Name)
-		err = r.client.Create(context.TODO(), configMap)
+		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", templateConfig.Namespace, "Config.Name", templateConfig.Name)
+		err = r.client.Create(context.TODO(), templateConfig)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// Check if this dodas ConfigMap already exists
+	foundDodas := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: dodasConfig.Name, Namespace: dodasConfig.Namespace}, foundDodas)
+	if err != nil && errors.IsNotFound(err) {		
+
+		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", dodasConfig.Namespace, "Config.Name", dodasConfig.Name)
+		err = r.client.Create(context.TODO(), dodasConfig)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -144,8 +158,23 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundPod.Namespace, "Pod.Name", foundPod.Name)
 	return reconcile.Result{}, nil
+}
+
+
+// newConfigMapForCR returns a configMap with the same name/namespace as the cr
+func newDODASConfigForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
+
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-dodas",
+			Namespace: cr.Namespace,
+		},
+		Data: map[string]string {
+			"dodas.yml": cr.Spec.AuthFile,
+			},
+	}
 }
 
 // newConfigMapForCR returns a configMap with the same name/namespace as the cr
@@ -153,7 +182,7 @@ func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-map",
+			Name:      cr.Name + "-template",
 			Namespace: cr.Namespace,
 		},
 		Data: map[string]string {
@@ -193,13 +222,24 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 			Labels:    labels,
 		},
 		Spec: corev1.PodSpec{
+			
 			Volumes: []corev1.Volume {
 				{
 					Name: "template",
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: cr.Name + "-map",
+								Name: cr.Name + "-template",
+							},
+				        },
+					},
+				},
+				{
+					Name: "dodas",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: cr.Name + "-dodas",
 							},
 				        },
 					},
@@ -210,9 +250,19 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 					Name:    cr.Spec.Name,
 					Image:   cr.Spec.Image,
 					Env: envs,
+					Args:[]string{
+						"--config",
+						"/etc/dodas.yml",
+						"create",
+						"/etc/template.yml",
+					},
 					VolumeMounts:  []corev1.VolumeMount{
 						{
 							Name: "template",
+							MountPath: "/etc/",
+						},
+						{
+							Name: "dodas",
 							MountPath: "/etc/",
 						},
 					},

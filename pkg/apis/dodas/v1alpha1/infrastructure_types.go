@@ -24,7 +24,8 @@ type InfrastructureSpec struct {
 	Image     string             `json:"image"`
 	CloudAuth CloudAuthFields `json:"cloud"`
 	ImAuth    IMAuthFields `json:"im,omitempty"`
-	Template string `json:"template,omitempty"`
+	Template string `json:"template"`
+	AuthFile  string `json:"authFile,omitempty"`
 
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
