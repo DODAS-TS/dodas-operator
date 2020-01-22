@@ -101,8 +101,6 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	dodasConfig := newDODASConfigForCR(instance)
-
 	templateConfig := newConfigMapForCR(instance)
 
 	// Define a new Pod object
@@ -123,18 +121,6 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", templateConfig.Namespace, "Config.Name", templateConfig.Name)
 		err = r.client.Create(context.TODO(), templateConfig)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
-	// Check if this dodas ConfigMap already exists
-	foundDodas := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: dodasConfig.Name, Namespace: dodasConfig.Namespace}, foundDodas)
-	if err != nil && errors.IsNotFound(err) {		
-
-		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", dodasConfig.Namespace, "Config.Name", dodasConfig.Name)
-		err = r.client.Create(context.TODO(), dodasConfig)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -177,20 +163,6 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 
 // newConfigMapForCR returns a configMap with the same name/namespace as the cr
-func newDODASConfigForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
-
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-dodas",
-			Namespace: cr.Namespace,
-		},
-		Data: map[string]string {
-			"dodas.yml": cr.Spec.AuthFile,
-			},
-	}
-}
-
-// newConfigMapForCR returns a configMap with the same name/namespace as the cr
 func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
 
 	return &corev1.ConfigMap{
@@ -200,6 +172,7 @@ func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
 		},
 		Data: map[string]string {
 			"template.yml": cr.Spec.Template,
+			"dodas.yml": cr.Spec.AuthFile,
 			},
 	}
 }
@@ -238,21 +211,11 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 			
 			Volumes: []corev1.Volume {
 				{
-					Name: "template",
+					Name: "config",
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{
 								Name: cr.Name + "-template",
-							},
-				        },
-					},
-				},
-				{
-					Name: "dodas",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: cr.Name + "-dodas",
 							},
 				        },
 					},
@@ -271,11 +234,7 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 					},
 					VolumeMounts:  []corev1.VolumeMount{
 						{
-							Name: "template",
-							MountPath: "/etc/",
-						},
-						{
-							Name: "dodas",
+							Name: "config",
 							MountPath: "/etc/",
 						},
 					},

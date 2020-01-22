@@ -31,6 +31,8 @@ spec:
         spec:
           description: InfrastructureSpec defines the desired state of Infrastructure
           properties:
+            authFile:
+              type: string
             cloud:
               description: CloudAuthFields fields for cloud provider
               properties:
@@ -53,17 +55,24 @@ spec:
               type: string
             template:
               type: string
-            authFile:
-              type: string
           required:
+          - cloud
           - image
           - name
+          - template
           type: object
         status:
           description: InfrastructureStatus defines the observed state of Infrastructure
-          type: object
           properties:
-            infID: string
+            infID:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "operator-sdk generate k8s" to regenerate
+                code after modifying this file Add custom validation using kubebuilder
+                tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              type: string
+          required:
+          - infID
+          type: object
       type: object
   version: v1alpha1
   versions:
