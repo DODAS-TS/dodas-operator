@@ -1,0 +1,70 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: infrastructures.dodas.infn.it
+spec:
+  group: dodas.infn.it
+  names:
+    kind: Infrastructure
+    listKind: InfrastructureList
+    plural: infrastructures
+    singular: infrastructure
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Infrastructure is the Schema for the infrastructures API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: InfrastructureSpec defines the desired state of Infrastructure
+          properties:
+            cloud:
+              description: CloudAuthFields fields for cloud provider
+              properties:
+                host:
+                  type: string
+              required:
+              - host
+              type: object
+            im:
+              description: IMAuthFields fields for cloud provider
+              properties:
+                host:
+                  type: string
+              required:
+              - host
+              type: object
+            image:
+              type: string
+            name:
+              type: string
+            template:
+              format: byte
+              type: string
+          required:
+          - cloud
+          - image
+          - name
+          type: object
+        status:
+          description: InfrastructureStatus defines the observed state of Infrastructure
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
