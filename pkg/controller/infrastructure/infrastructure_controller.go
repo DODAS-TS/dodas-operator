@@ -150,6 +150,12 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		
+		instance.Status.InfID = "created"
+		err = r.client.Status().Update(context.Background(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 
 		// Pod created successfully - don't requeue
 		return reconcile.Result{}, nil
@@ -157,8 +163,15 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
+	instance.Status.InfID = "Done"
+	err = r.client.Status().Update(context.Background(), instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundPod.Namespace, "Pod.Name", foundPod.Name)
+
 	return reconcile.Result{}, nil
 }
 
@@ -253,7 +266,7 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 					Args:[]string{
 						"--config",
 						"/etc/dodas.yml",
-						"create",
+						"creat",
 						"/etc/template.yml",
 					},
 					VolumeMounts:  []corev1.VolumeMount{

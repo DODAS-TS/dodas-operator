@@ -56,13 +56,14 @@ spec:
             authFile:
               type: string
           required:
-          - cloud
           - image
           - name
           type: object
         status:
           description: InfrastructureStatus defines the observed state of Infrastructure
           type: object
+          properties:
+            infID: string
       type: object
   version: v1alpha1
   versions:
