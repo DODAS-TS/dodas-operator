@@ -6,6 +6,7 @@ import (
 
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,10 +105,10 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	templateConfig := newConfigMapForCR(instance)
 
 	// Define a new Pod object
-	pod := newPodForCR(instance, templateConfig)
+	job := newJobForCR(instance, templateConfig)
 
 	// Set Infrastructure instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 	if err := controllerutil.SetControllerReference(instance, templateConfig, r.scheme); err != nil {
@@ -126,37 +127,31 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		}
 	}
 
-	// Check if this Pod already exists
-	foundPod := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, foundPod)
+	// Check if this Job already exists
+	foundJob := &batchv1.Job{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, foundJob)
 	if err != nil && errors.IsNotFound(err) {		
 
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
+		reqLogger.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+		err = r.client.Create(context.TODO(), job)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 		
-		instance.Status.InfID = "created"
-		err = r.client.Status().Update(context.Background(), instance)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
 		// Pod created successfully - don't requeue
 		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	instance.Status.InfID = "Done"
+	instance.Status.InfID = string(foundJob.Status.Conditions[0].Status)
 	err = r.client.Status().Update(context.Background(), instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundPod.Namespace, "Pod.Name", foundPod.Name)
+	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
 
 	return reconcile.Result{}, nil
 }
@@ -173,12 +168,13 @@ func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
 		Data: map[string]string {
 			"template.yml": cr.Spec.Template,
 			"dodas.yml": cr.Spec.AuthFile,
+			"inf.id": "",
 			},
 	}
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *corev1.Pod {
+// newJobForCR returns a busybox pod with the same name/namespace as the cr
+func newJobForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *batchv1.Job {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -201,45 +197,54 @@ func newPodForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *
 		}
 	}
 
-	return &corev1.Pod{
+	var backoff  int32 = 0
+
+	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
+			Name:      cr.Name + "-job",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},
-		Spec: corev1.PodSpec{
-			
-			Volumes: []corev1.Volume {
-				{
-					Name: "config",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: cr.Name + "-template",
-							},
-				        },
-					},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoff,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cr.Name + "-pod",
+					Namespace: cr.Namespace,
+					Labels:    labels,
 				},
-			},
-			Containers: []corev1.Container{
-				{
-					Name:    cr.Spec.Name,
-					Image:   cr.Spec.Image,
-					Env: envs,
-					Command: []string{
-						"dodas",
-						"--config",
-						"/etc/dodas.yml",
-						"creat",
-						"/etc/template.yml",
-						"&&",
-						"sleep",
-						"infinity",
-					},
-					VolumeMounts:  []corev1.VolumeMount{
+				Spec: corev1.PodSpec{
+					RestartPolicy: "Never",
+					HostNetwork: true,
+					Volumes: []corev1.Volume {
 						{
 							Name: "config",
-							MountPath: "/etc/configs",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: cr.Name + "-template",
+									},
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:    cr.Spec.Name,
+							Image:   cr.Spec.Image,
+							Env: envs,
+							Command: []string{
+								"sh",
+								"-c",
+								"dodas --config /etc/configs/dodas.yml create /etc/configs/template.yml",
+							},
+							VolumeMounts:  []corev1.VolumeMount{
+								{
+									Name: "config",
+									MountPath: "/etc/configs",
+									ReadOnly: false,
+								},
+							},
 						},
 					},
 				},
