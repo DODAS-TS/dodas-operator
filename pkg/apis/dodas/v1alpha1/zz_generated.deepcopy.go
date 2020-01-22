@@ -45,7 +45,7 @@ func (in *Infrastructure) DeepCopyInto(out *Infrastructure) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	in.Spec.DeepCopyInto(&out.Spec)
+	out.Spec = in.Spec
 	out.Status = in.Status
 	return
 }
@@ -106,11 +106,6 @@ func (in *InfrastructureSpec) DeepCopyInto(out *InfrastructureSpec) {
 	*out = *in
 	out.CloudAuth = in.CloudAuth
 	out.ImAuth = in.ImAuth
-	if in.Template != nil {
-		in, out := &in.Template, &out.Template
-		*out = make([]byte, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

@@ -3,5 +3,12 @@ kind: Infrastructure
 metadata:
   name: example-infrastructure
 spec:
-  # Add fields here
-  size: 3
+  name: test
+  image: busybox
+  cloud:
+    host: test
+  im:
+    host: test2
+  template: |
+    asdasd
+    asdasd
