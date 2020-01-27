@@ -114,9 +114,67 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// TODO: check for deletionTimestamp set
 	// TODO: if infID but updated
 
-	//if (instance.Status.InfID != "") && (instance.Status.Error == "") && instance.DeletionTimestamp.IsZero() {
+	// everything ok go on
 	if (instance.Status.InfID != "") && (instance.Status.Error == "") {
-		return reconcile.Result{ RequeueAfter: delay }, nil
+		
+		if instance.GetDeletionTimestamp() == nil {
+			// TODO: check if present in IM
+			return reconcile.Result{}, nil
+		} 
+		
+		// TODO: create function delete
+		// TODO: refresh token and delete
+
+		reqLogger.Info("Destroying cluster before deleting resource")
+		client := &http.Client{
+			Timeout: 300 * time.Second,
+		}
+
+		req, err := http.NewRequest("DELETE", string(instance.Spec.ImAuth.Host) + "/" + instance.Status.InfID , nil)
+		if err != nil {
+			reqLogger.Error( err, "failure preparing http request" )
+			// if error persists retry later
+			reqLogger.Info( "Reconciling %s in %s", instance.Name, delay )
+			return reconcile.Result{ RequeueAfter: delay, }, nil
+		}
+
+		authHeader := PrepareAuthHeaders(instance)
+
+		req.Header.Set("Authorization", authHeader)
+
+		// Perform create request
+		resp, err := client.Do(req)
+		if err != nil {
+			// if error persists retry later
+			reqLogger.Error( err, "error contacting IM server" )
+			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+			return reconcile.Result{ RequeueAfter: delay, }, nil
+		}
+	
+		body, _ := ioutil.ReadAll(resp.Body)
+	
+
+		// save infID in status or the error
+		if resp.StatusCode == 200 {
+			reqLogger.Info(fmt.Sprintf("Removed infrastracture ID: %s", instance.Status.InfID))
+		} else {
+			// if error persists retry later
+			reqLogger.Info( string(body) )
+			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+			return reconcile.Result{ RequeueAfter: delay, }, nil 
+			//fmt.Errorf(string(body))
+		}
+
+
+		// remove finalizer
+		reqLogger.Info("Deletion successful, removing finalizer")
+		instance.SetFinalizers([]string{})
+		err = r.client.Update(context.Background(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Infrastructure finalizer")
+			return reconcile.Result{ RequeueAfter: delay, }, nil
+		}
+		return reconcile.Result{}, nil
 	}
 
     // Check if requested template ConfigMap already exists
@@ -125,7 +183,17 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	if err != nil && errors.IsNotFound(err) {		
 		// if error persists retry later
 		errorMsg := fmt.Sprintf("No template found with name: %s", instance.Spec.Template)
-		reqLogger.Info( errorMsg )
+		reqLogger.Error( err, errorMsg )
+		if instance.Status.Error != errorMsg {
+			instance.Status.Error = errorMsg
+			instance.Status.Status = "error"
+			r.client.Status().Update(context.Background(), instance)
+		}
+		reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+		return reconcile.Result{ RequeueAfter: delay, }, nil
+	} else if  err != nil {
+		errorMsg := "Error looking for template"
+		reqLogger.Error( err, errorMsg )
 		if instance.Status.Error != errorMsg {
 			instance.Status.Error = errorMsg
 			instance.Status.Status = "error"
@@ -146,6 +214,8 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 	if templateBytes, ok := templateContent["template.yml"]; ok {
 
+		// TODO create function create
+
 		client := &http.Client{
 			Timeout: 300 * time.Second,
 		}
@@ -153,7 +223,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		// Prepare create request
 		req, err := http.NewRequest("POST", string(instance.Spec.ImAuth.Host), bytes.NewBuffer([]byte(templateBytes)))
 		if err != nil {
-			reqLogger.Info( err.Error() )
+			reqLogger.Error( err, "failure preparing http request" )
 			// if error persists retry later
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
@@ -174,13 +244,17 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		// Add finalizer (cant remove instance until I manage to destroy it)
 		instance.SetFinalizers([]string{"delete"})
-		r.client.Update(context.Background(), instance)
+		err = r.client.Update(context.Background(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Memcached with finalizer")
+			return reconcile.Result{ RequeueAfter: delay, }, nil
+		}
 
 		// Perform create request
 		resp, err := client.Do(req)
 		if err != nil {
 			// if error persists retry later
-			reqLogger.Info( err.Error() )
+			reqLogger.Error( err, "error contacting IM server" )
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
 				instance.Status.Status = "error"
@@ -253,7 +327,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// Pod already exists - don't requeue
 	//reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
 
-	return reconcile.Result{ RequeueAfter: delay }, nil
+	return reconcile.Result{}, nil
 }
 
 var decodeFields = map[string]string{
