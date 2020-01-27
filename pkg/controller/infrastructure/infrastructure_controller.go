@@ -115,7 +115,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// TODO: if infID but updated
 
 	//if (instance.Status.InfID != "") && (instance.Status.Error == "") && instance.DeletionTimestamp.IsZero() {
-	if (instance.Spec.InfID != "") && (instance.Status.Error == "") {
+	if (instance.Status.InfID != "") && (instance.Status.Error == "") {
 		return reconcile.Result{ RequeueAfter: delay }, nil
 	}
 
@@ -192,10 +192,9 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		// save infID in status or the error
 		if resp.StatusCode == 200 {
-			instance.Spec.InfID = stringSplit[len(stringSplit)-1]
+			instance.Status.InfID = stringSplit[len(stringSplit)-1]
 			instance.Status.Error = ""
 			r.client.Status().Update(context.Background(), instance)
-
 		} else {
 			// if error persists retry later
 			reqLogger.Info( string(body) )
