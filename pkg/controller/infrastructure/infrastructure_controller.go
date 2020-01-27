@@ -1,19 +1,26 @@
 package infrastructure
 
 import (
+	"fmt"
+	"bytes"
 	"context"
 	"reflect"
+	"net/http"
+	"io/ioutil"
+	"strings"
+	"time"
+	"encoding/json"
 
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	batchv1 "k8s.io/api/batch/v1"
+	//batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -102,153 +109,231 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	templateConfig := newConfigMapForCR(instance)
+	if (instance.Status.InfID != "") && (instance.Status.Error == "") && instance.DeletionTimestamp.IsZero() {
+		return reconcile.Result{}, nil
+	}
 
-	// Define a new Pod object
-	job := newJobForCR(instance, templateConfig)
+    // Check if requested template ConfigMap already exists
+	foundTemplate := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Template , Namespace: instance.Namespace}, foundTemplate)
+	if err != nil && errors.IsNotFound(err) {		
+		reqLogger.Info("No template found with name:", instance.Spec.Template)
+		instance.Status.Error = fmt.Sprintf("No template found with name: %s", instance.Spec.Template)
+		err = r.client.Status().Update(context.Background(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	var templateContent map[string][]byte
+	// check if template file is there
+	templateContent = foundTemplate.BinaryData
+
+	if templateBytes, ok := templateContent["template.yml"]; ok {
+
+		client := &http.Client{
+			Timeout: 300 * time.Second,
+		}
+
+		// Prepare create request
+		req, err := http.NewRequest("POST", string(instance.Spec.ImAuth.Host), bytes.NewBuffer(templateBytes))
+		if err != nil {
+			instance.Status.Error = err.Error()
+			r.client.Status().Update(context.Background(), instance)
+			return reconcile.Result{}, err
+		}
+
+		req.Header.Set("Content-Type", "text/yaml")
+
+		authHeader := PrepareAuthHeaders(instance)
+
+		req.Header.Set("Authorization", authHeader)
+
+		// Perform create request
+		resp, err := client.Do(req)
+		if err != nil {
+			instance.Status.Error = err.Error()
+			r.client.Status().Update(context.Background(), instance)
+			return reconcile.Result{}, err
+		}
+	
+		body, _ := ioutil.ReadAll(resp.Body)
+	
+		stringSplit := strings.Split(string(body), "/")
+
+		// save infID in status or the error
+		if resp.StatusCode == 200 {
+			instance.Status.InfID = stringSplit[len(stringSplit)-1]
+			r.client.Status().Update(context.Background(), instance)
+
+		} else {
+			instance.Status.Error =  string(body)
+			r.client.Status().Update(context.Background(), instance)
+			return reconcile.Result{}, fmt.Errorf(string(body))
+		}
+
+	} else {
+			instance.Status.Error = "Please use template.yml in the key for template config map"
+			r.client.Status().Update(context.Background(), instance)
+			return reconcile.Result{}, fmt.Errorf("Please use template.yml in the key for template config map")
+	}
+
+	// GET TOKEN and SAVE refresh
+
 
 	// Set Infrastructure instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-	if err := controllerutil.SetControllerReference(instance, templateConfig, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
+	//if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
+	//	return reconcile.Result{}, err
+	//}
+
+	// // if timestamp in metadata.deletionTimestamp and create command finished (and infID)--> remove infID
+	// err = controllerutil.RemoveFinalizerWithError(instance, instance.GetFinalizers()[0])
 
 	// Check if this template ConfigMap already exists
-	foundTemplate := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: templateConfig.Name, Namespace: templateConfig.Namespace}, foundTemplate)
-	if err != nil && errors.IsNotFound(err) {		
+	// foundTemplate := &corev1.ConfigMap{}
+	// err = r.client.Get(context.TODO(), types.NamespacedName{Name: templateConfig.Name, Namespace: templateConfig.Namespace}, foundTemplate)
+	// if err != nil && errors.IsNotFound(err) {		
 
-		reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", templateConfig.Namespace, "Config.Name", templateConfig.Name)
-		err = r.client.Create(context.TODO(), templateConfig)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
-	// Check if this Job already exists
-	foundJob := &batchv1.Job{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, foundJob)
-	if err != nil && errors.IsNotFound(err) {		
-
-		reqLogger.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-		err = r.client.Create(context.TODO(), job)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	instance.Status.InfID = string(foundJob.Status.Conditions[0].Status)
-	err = r.client.Status().Update(context.Background(), instance)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
+	// 	reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", templateConfig.Namespace, "Config.Name", templateConfig.Name)
+	// 	err = r.client.Create(context.TODO(), templateConfig)
+	// 	if err != nil {
+	// 		return reconcile.Result{}, err
+	// 	}
+	// }
+	// instance.Status.InfID = string(foundJob.Status.Conditions[0].Status)
+	// err = r.client.Status().Update(context.Background(), instance)
+	// if err != nil {
+	// 	return reconcile.Result{}, err
+	// }
 
 	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
+	//reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
 
 	return reconcile.Result{}, nil
 }
 
-
-// newConfigMapForCR returns a configMap with the same name/namespace as the cr
-func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
-
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-template",
-			Namespace: cr.Namespace,
-		},
-		Data: map[string]string {
-			"template.yml": cr.Spec.Template,
-			"dodas.yml": cr.Spec.AuthFile,
-			"inf.id": "",
-			},
-	}
+var decodeFields = map[string]string{
+	"ID":            "id",
+	"Type":          "type",
+	"Username":      "username",
+	"Password":      "password",
+	"Token":         "token",
+	"Host":          "host",
+	"Tenant":        "tenant",
+	"AuthURL":       "auth_url",
+	"AuthVersion":   "auth_version",
+	"Domain":        "domain",
+	"ServiceRegion": "service_region",
 }
 
-// newJobForCR returns a busybox pod with the same name/namespace as the cr
-func newJobForCR(cr *dodasv1alpha1.Infrastructure, template *corev1.ConfigMap) *batchv1.Job {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	var envs []corev1.EnvVar
-    var env corev1.EnvVar
+// PrepareAuthHeaders ..
+func PrepareAuthHeaders(clientConf *dodasv1alpha1.Infrastructure) string {
 
-	fields := reflect.TypeOf(cr.Spec.CloudAuth)
-	values := reflect.ValueOf(cr.Spec.CloudAuth)
+	var authHeaderCloudList []string
+
+	fields := reflect.TypeOf(clientConf.Spec.CloudAuth)
+	values := reflect.ValueOf(clientConf.Spec.CloudAuth)
 
 	for i := 0; i < fields.NumField(); i++ {
 		field := fields.Field(i)
 		value := values.Field(i)
+
 		if value.Interface() != "" {
-			//keyTemp := fmt.Sprintf("%v = %v", decodeFields[field.Name], value.Interface())
-			env = corev1.EnvVar{
-				Name: "Cloud"+field.Name,
-				Value: value.Interface().(string),
-			}
-			envs = append(envs, env)
+			keyTemp := fmt.Sprintf("%v = %v", decodeFields[field.Name], value)
+			authHeaderCloudList = append(authHeaderCloudList, keyTemp)
 		}
 	}
 
-	var backoff  int32 = 0
+	authHeaderCloud := strings.Join(authHeaderCloudList, ";")
 
-	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-job",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoff,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      cr.Name + "-pod",
-					Namespace: cr.Namespace,
-					Labels:    labels,
-				},
-				Spec: corev1.PodSpec{
-					RestartPolicy: "Never",
-					HostNetwork: true,
-					Volumes: []corev1.Volume {
-						{
-							Name: "config",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: cr.Name + "-template",
-									},
-								},
-							},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							Name:    cr.Spec.Name,
-							Image:   cr.Spec.Image,
-							Env: envs,
-							Command: []string{
-								"sh",
-								"-c",
-								"dodas --config /etc/configs/dodas.yml create /etc/configs/template.yml",
-							},
-							VolumeMounts:  []corev1.VolumeMount{
-								{
-									Name: "config",
-									MountPath: "/etc/configs",
-									ReadOnly: false,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+	var authHeaderIMList []string
+
+	fields = reflect.TypeOf(clientConf.Spec.ImAuth)
+	values = reflect.ValueOf(clientConf.Spec.ImAuth)
+
+	for i := 0; i < fields.NumField(); i++ {
+		field := fields.Field(i)
+		if decodeFields[field.Name] != "host" {
+			value := values.Field(i)
+			if value.Interface() != "" {
+				keyTemp := fmt.Sprintf("%v = %v", decodeFields[field.Name], value.Interface())
+				authHeaderIMList = append(authHeaderIMList, keyTemp)
+			}
+		}
 	}
+
+	authHeaderIM := strings.Join(authHeaderIMList, ";")
+
+	authHeader := authHeaderCloud + "\\n" + authHeaderIM
+
+	//fmt.Printf(authHeader)
+
+	return authHeader
 }
+
+// RefreshToken ..
+func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure) (string, error) {
+
+	var token string
+
+	clientID := clientConf.Spec.AllowRefresh.ClientID
+	clientSecret := clientConf.Spec.AllowRefresh.ClientSecret
+	IAMTokenEndpoint := clientConf.Spec.AllowRefresh.IAMTokenEndpoint
+
+	client := &http.Client{
+		Timeout: 300 * time.Second,
+		
+	}
+
+	req, _ := http.NewRequest("GET", IAMTokenEndpoint, nil)
+
+	req.SetBasicAuth(clientID, clientSecret)
+
+	req.Header.Set("grant_type", "refresh_token")
+	req.Header.Set("refresh_token", refreshToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode == 200 {
+
+		type accessTokenStruct struct {
+			AccessToken  string `json:"access_token"`
+		}
+
+		var accessTokenJSON accessTokenStruct
+
+		err = json.Unmarshal(body, &accessTokenJSON)
+		if err != nil {
+			return "", err
+		}
+
+		token = accessTokenJSON.AccessToken		
+
+	} else {
+		return "", fmt.Errorf("ERROR: %s", string(body))
+	}
+
+	return token, nil
+}
+
+// newConfigMapForCR returns a configMap with the same name/namespace as the cr
+// func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
+
+// 	return &corev1.ConfigMap{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      cr.Name + "-template",
+// 			Namespace: cr.Namespace,
+// 		},
+// 		Data: map[string]string {
+// 			"template.yml": cr.Spec.Template,
+// 			"dodas.yml": cr.Spec.AuthFile,
+// 			"inf.id": "",
+// 			},
+// 	}
+// }
+

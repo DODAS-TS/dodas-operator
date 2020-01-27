@@ -31,23 +31,71 @@ spec:
         spec:
           description: InfrastructureSpec defines the desired state of Infrastructure
           properties:
-            authFile:
-              type: string
+            allowrefresh:
+              description: TokenRefreshConf ..
+              properties:
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                iam_endpoint:
+                  type: string
+              required:
+              - client_id
+              - client_secret
+              - iam_endpoint
+              type: object
             cloud:
               description: CloudAuthFields fields for cloud provider
               properties:
+                auth_url:
+                  type: string
+                auth_version:
+                  type: string
+                domain:
+                  type: string
                 host:
                   type: string
+                id:
+                  type: string
+                password:
+                  type: string
+                service_region:
+                  type: string
+                tenant:
+                  type: string
+                type:
+                  type: string
+                username:
+                  type: string
               required:
+              - auth_version
               - host
+              - id
+              - password
+              - tenant
+              - type
+              - username
               type: object
             im:
               description: IMAuthFields fields for cloud provider
               properties:
                 host:
                   type: string
+                id:
+                  type: string
+                password:
+                  type: string
+                token:
+                  type: string
+                type:
+                  type: string
+                username:
+                  type: string
               required:
               - host
+              - id
+              - type
               type: object
             image:
               type: string
@@ -56,6 +104,8 @@ spec:
             template:
               type: string
           required:
+          - cloud
+          - im
           - image
           - name
           - template
@@ -63,6 +113,8 @@ spec:
         status:
           description: InfrastructureStatus defines the observed state of Infrastructure
           properties:
+            error:
+              type: string
             infID:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate
@@ -70,6 +122,7 @@ spec:
                 tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
           required:
+          - error
           - infID
           type: object
       type: object

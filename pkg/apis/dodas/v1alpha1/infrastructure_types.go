@@ -9,23 +9,44 @@ import (
 
 // CloudAuthFields fields for cloud provider
 type CloudAuthFields struct {
-	Host string	`json:"host"`
+	ID            string `json:"id"`
+	Type          string `json:"type"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	Host          string `json:"host"`
+	Tenant        string `json:"tenant"`
+	AuthURL       string `json:"auth_url,omitempty"`
+	AuthVersion   string `json:"auth_version"`
+	Domain        string `json:"domain,omitempty"`
+	ServiceRegion string `json:"service_region,omitempty"`
 }
 
 
 // IMAuthFields fields for cloud provider
 type IMAuthFields struct {
-	Host string	`json:"host"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Host     string `json:"host"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Token    string `json:"token,omitempty"`
+}
+
+// TokenRefreshConf ..
+type TokenRefreshConf struct {
+	ClientID  string `json:"client_id"`
+	ClientSecret  string `json:"client_secret"`
+	IAMTokenEndpoint string `json:"iam_endpoint"`
 }
 
 // InfrastructureSpec defines the desired state of Infrastructure
 type InfrastructureSpec struct {
 	Name      string             `json:"name"`
 	Image     string             `json:"image"`
-	CloudAuth CloudAuthFields `json:"cloud,omitempty"`
-	ImAuth    IMAuthFields `json:"im,omitempty"`
+	CloudAuth CloudAuthFields `json:"cloud"`
+	ImAuth    IMAuthFields `json:"im"`
+	AllowRefresh TokenRefreshConf `json:"allowrefresh,omitempty"`
 	Template string `json:"template"`
-	AuthFile  string `json:"authFile,omitempty"`
 
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -38,6 +59,7 @@ type InfrastructureStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	InfID      string             `json:"infID"`
+	Error      string             `json:"error"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
