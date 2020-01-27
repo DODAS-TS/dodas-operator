@@ -99,6 +99,8 @@ spec:
               type: object
             image:
               type: string
+            infID:
+              type: string
             name:
               type: string
             template:
@@ -107,6 +109,7 @@ spec:
           - cloud
           - im
           - image
+          - infID
           - name
           - template
           type: object
@@ -114,8 +117,6 @@ spec:
           description: InfrastructureStatus defines the observed state of Infrastructure
           properties:
             error:
-              type: string
-            infID:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate
                 code after modifying this file Add custom validation using kubebuilder
@@ -123,7 +124,6 @@ spec:
               type: string
           required:
           - error
-          - infID
           type: object
       type: object
   version: v1alpha1

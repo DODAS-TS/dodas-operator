@@ -47,6 +47,7 @@ type InfrastructureSpec struct {
 	ImAuth    IMAuthFields `json:"im"`
 	AllowRefresh TokenRefreshConf `json:"allowrefresh,omitempty"`
 	Template string `json:"template"`
+	InfID      string             `json:"infID"`
 
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -58,7 +59,6 @@ type InfrastructureStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	InfID      string             `json:"infID"`
 	Error      string             `json:"error"`
 }
 

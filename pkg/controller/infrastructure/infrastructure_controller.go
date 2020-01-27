@@ -62,13 +62,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Infrastructure
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &dodasv1alpha1.Infrastructure{},
-	})
-	if err != nil {
-		return err
-	}
+	// err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	// 	IsController: true,
+	// 	OwnerType:    &dodasv1alpha1.Infrastructure{},
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -86,8 +86,6 @@ type ReconcileInfrastructure struct {
 
 // Reconcile reads that state of the cluster for a Infrastructure object and makes changes based on the state read
 // and what is in the Infrastructure.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
@@ -95,6 +93,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Infrastructure")
 
+	delay := time.Minute
 	// Fetch the Infrastructure instance
 	instance := &dodasv1alpha1.Infrastructure{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -106,28 +105,43 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
+		reqLogger.Info( err.Error() )
+		return reconcile.Result{ RequeueAfter: delay }, nil
 	}
 
-	if (instance.Status.InfID != "") && (instance.Status.Error == "") && instance.DeletionTimestamp.IsZero() {
-		return reconcile.Result{}, nil
+	// TODO: if status == precendente
+	// What happens if edit when already defined?
+	// TODO: check for deletionTimestamp set
+	// TODO: if infID but updated
+
+	//if (instance.Status.InfID != "") && (instance.Status.Error == "") && instance.DeletionTimestamp.IsZero() {
+	if (instance.Spec.InfID != "") && (instance.Status.Error == "") {
+		return reconcile.Result{ RequeueAfter: delay }, nil
 	}
 
     // Check if requested template ConfigMap already exists
 	foundTemplate := &corev1.ConfigMap{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Template , Namespace: instance.Namespace}, foundTemplate)
 	if err != nil && errors.IsNotFound(err) {		
-		reqLogger.Info("No template found with name:", instance.Spec.Template)
-		instance.Status.Error = fmt.Sprintf("No template found with name: %s", instance.Spec.Template)
-		err = r.client.Status().Update(context.Background(), instance)
-		if err != nil {
-			return reconcile.Result{}, err
+		// if error persists retry later
+		errorMsg := fmt.Sprintf("No template found with name: %s", instance.Spec.Template)
+		reqLogger.Info( errorMsg )
+		if instance.Status.Error != errorMsg {
+			instance.Status.Error = errorMsg
+			r.client.Status().Update(context.Background(), instance)
 		}
+		reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+		return reconcile.Result{ RequeueAfter: delay, }, nil
 	}
 
-	var templateContent map[string][]byte
+	var templateContent map[string]string
+	//map[string][]byte
 	// check if template file is there
-	templateContent = foundTemplate.BinaryData
+	templateContent = foundTemplate.Data
+
+	//reqLogger.Info(fmt.Sprintf("Found configMap: %s == %s", instance.Spec.Template, foundTemplate.Name))
+
+	//reqLogger.Info(fmt.Sprintf("templateContent[\"template.yml\"] == %s", templateContent["template.yml"]))
 
 	if templateBytes, ok := templateContent["template.yml"]; ok {
 
@@ -136,11 +150,16 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		}
 
 		// Prepare create request
-		req, err := http.NewRequest("POST", string(instance.Spec.ImAuth.Host), bytes.NewBuffer(templateBytes))
+		req, err := http.NewRequest("POST", string(instance.Spec.ImAuth.Host), bytes.NewBuffer([]byte(templateBytes)))
 		if err != nil {
-			instance.Status.Error = err.Error()
-			r.client.Status().Update(context.Background(), instance)
-			return reconcile.Result{}, err
+			reqLogger.Info( err.Error() )
+			// if error persists retry later
+			if instance.Status.Error != err.Error() {
+				instance.Status.Error = err.Error()
+				r.client.Status().Update(context.Background(), instance)
+			}
+			reqLogger.Info( "Reconciling %s in %s", instance.Name, delay )
+			return reconcile.Result{ RequeueAfter: delay, }, nil
 		}
 
 		req.Header.Set("Content-Type", "text/yaml")
@@ -149,12 +168,22 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		req.Header.Set("Authorization", authHeader)
 
+		reqLogger.Info("Performing create requests")
+
+		// Add finalizer (cant remove instance until I manage to destroy it)
+		instance.SetFinalizers([]string{"delete"})
+
 		// Perform create request
 		resp, err := client.Do(req)
 		if err != nil {
-			instance.Status.Error = err.Error()
-			r.client.Status().Update(context.Background(), instance)
-			return reconcile.Result{}, err
+			// if error persists retry later
+			reqLogger.Info( err.Error() )
+			if instance.Status.Error != err.Error() {
+				instance.Status.Error = err.Error()
+				r.client.Status().Update(context.Background(), instance)
+			}
+			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+			return reconcile.Result{ RequeueAfter: delay, }, nil
 		}
 	
 		body, _ := ioutil.ReadAll(resp.Body)
@@ -163,19 +192,29 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		// save infID in status or the error
 		if resp.StatusCode == 200 {
-			instance.Status.InfID = stringSplit[len(stringSplit)-1]
+			instance.Spec.InfID = stringSplit[len(stringSplit)-1]
+			instance.Status.Error = ""
 			r.client.Status().Update(context.Background(), instance)
 
 		} else {
-			instance.Status.Error =  string(body)
-			r.client.Status().Update(context.Background(), instance)
-			return reconcile.Result{}, fmt.Errorf(string(body))
+			// if error persists retry later
+			reqLogger.Info( string(body) )
+			if instance.Status.Error != string(body) {
+				instance.Status.Error =  string(body)
+				r.client.Status().Update(context.Background(), instance)
+			}
+			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+			return reconcile.Result{ RequeueAfter: delay, }, nil 
+			//fmt.Errorf(string(body))
 		}
 
 	} else {
-			instance.Status.Error = "Please use template.yml in the key for template config map"
+			errorMsg := "Please use template.yml in the key for template config map"
+			reqLogger.Info( errorMsg )
+			instance.Status.Error = errorMsg
 			r.client.Status().Update(context.Background(), instance)
-			return reconcile.Result{}, fmt.Errorf("Please use template.yml in the key for template config map")
+			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
+			return reconcile.Result{ RequeueAfter: delay, }, nil
 	}
 
 	// GET TOKEN and SAVE refresh
@@ -209,7 +248,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// Pod already exists - don't requeue
 	//reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{ RequeueAfter: delay }, nil
 }
 
 var decodeFields = map[string]string{
@@ -233,6 +272,8 @@ func PrepareAuthHeaders(clientConf *dodasv1alpha1.Infrastructure) string {
 
 	fields := reflect.TypeOf(clientConf.Spec.CloudAuth)
 	values := reflect.ValueOf(clientConf.Spec.CloudAuth)
+
+	// TODO: use go templates!
 
 	for i := 0; i < fields.NumField(); i++ {
 		field := fields.Field(i)
