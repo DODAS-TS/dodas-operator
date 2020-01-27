@@ -128,6 +128,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		reqLogger.Info( errorMsg )
 		if instance.Status.Error != errorMsg {
 			instance.Status.Error = errorMsg
+			instance.Status.Status = "error"
 			r.client.Status().Update(context.Background(), instance)
 		}
 		reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
@@ -156,6 +157,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			// if error persists retry later
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
+				instance.Status.Status = "error"
 				r.client.Status().Update(context.Background(), instance)
 			}
 			reqLogger.Info( "Reconciling %s in %s", instance.Name, delay )
@@ -172,6 +174,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		// Add finalizer (cant remove instance until I manage to destroy it)
 		instance.SetFinalizers([]string{"delete"})
+		r.client.Update(context.Background(), instance)
 
 		// Perform create request
 		resp, err := client.Do(req)
@@ -180,6 +183,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			reqLogger.Info( err.Error() )
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
+				instance.Status.Status = "error"
 				r.client.Status().Update(context.Background(), instance)
 			}
 			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
@@ -194,12 +198,14 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		if resp.StatusCode == 200 {
 			instance.Status.InfID = stringSplit[len(stringSplit)-1]
 			instance.Status.Error = ""
+			instance.Status.Status = "created"
 			r.client.Status().Update(context.Background(), instance)
 		} else {
 			// if error persists retry later
 			reqLogger.Info( string(body) )
 			if instance.Status.Error != string(body) {
 				instance.Status.Error =  string(body)
+				instance.Status.Status = "error"
 				r.client.Status().Update(context.Background(), instance)
 			}
 			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )

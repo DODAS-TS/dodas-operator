@@ -121,9 +121,12 @@ spec:
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
+            status:
+              type: string
           required:
           - error
           - infID
+          - status
           type: object
       type: object
   version: v1alpha1
@@ -131,8 +134,12 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-    additionalPrinterColumns:
-      - name: InfID
-        type: string
-        description: Infrastructure ID
-        jsonPath: .status.infID
+  additionalPrinterColumns:
+    - name: InfID
+      type: string
+      description: Infrastructure ID
+      JSONPath: .status.infID
+    - name: status
+      type: string
+      description: deployment status
+      JSONPath: .status.status
