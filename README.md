@@ -220,3 +220,10 @@ $ kubectl delete infrastructure example-infrastructure
 ```text
 infrastructure.dodas.infn.it "example-infrastructure" deleted
 ```
+
+## Developer guide
+
+### Dev Requirements
+
+- go > 1.12
+- [operator-sdk]()
