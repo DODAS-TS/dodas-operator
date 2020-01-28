@@ -2,22 +2,19 @@ package infrastructure
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"reflect"
-	"strings"
 	"time"
 
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
 	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -206,129 +203,3 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 	return reconcile.Result{}, nil
 }
-
-var decodeFields = map[string]string{
-	"ID":            "id",
-	"Type":          "type",
-	"Username":      "username",
-	"Password":      "password",
-	"Token":         "token",
-	"Host":          "host",
-	"Tenant":        "tenant",
-	"AuthURL":       "auth_url",
-	"AuthVersion":   "auth_version",
-	"Domain":        "domain",
-	"ServiceRegion": "service_region",
-}
-
-// PrepareAuthHeaders ..
-func PrepareAuthHeaders(clientConf *dodasv1alpha1.Infrastructure) string {
-
-	var authHeaderCloudList []string
-
-	fields := reflect.TypeOf(clientConf.Spec.CloudAuth)
-	values := reflect.ValueOf(clientConf.Spec.CloudAuth)
-
-	// TODO: use go templates!
-
-	for i := 0; i < fields.NumField(); i++ {
-		field := fields.Field(i)
-		value := values.Field(i)
-
-		if value.Interface() != "" {
-			keyTemp := fmt.Sprintf("%v = %v", decodeFields[field.Name], value)
-			authHeaderCloudList = append(authHeaderCloudList, keyTemp)
-		}
-	}
-
-	authHeaderCloud := strings.Join(authHeaderCloudList, ";")
-
-	var authHeaderIMList []string
-
-	fields = reflect.TypeOf(clientConf.Spec.ImAuth)
-	values = reflect.ValueOf(clientConf.Spec.ImAuth)
-
-	for i := 0; i < fields.NumField(); i++ {
-		field := fields.Field(i)
-		if decodeFields[field.Name] != "host" {
-			value := values.Field(i)
-			if value.Interface() != "" {
-				keyTemp := fmt.Sprintf("%v = %v", decodeFields[field.Name], value.Interface())
-				authHeaderIMList = append(authHeaderIMList, keyTemp)
-			}
-		}
-	}
-
-	authHeaderIM := strings.Join(authHeaderIMList, ";")
-
-	authHeader := authHeaderCloud + "\\n" + authHeaderIM
-
-	//fmt.Printf(authHeader)
-
-	return authHeader
-}
-
-// RefreshToken ..
-func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure) (string, error) {
-
-	var token string
-
-	clientID := clientConf.Spec.AllowRefresh.ClientID
-	clientSecret := clientConf.Spec.AllowRefresh.ClientSecret
-	IAMTokenEndpoint := clientConf.Spec.AllowRefresh.IAMTokenEndpoint
-
-	client := &http.Client{
-		Timeout: 300 * time.Second,
-	}
-
-	req, _ := http.NewRequest("GET", IAMTokenEndpoint, nil)
-
-	req.SetBasicAuth(clientID, clientSecret)
-
-	req.Header.Set("grant_type", "refresh_token")
-	req.Header.Set("refresh_token", refreshToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-
-	body, _ := ioutil.ReadAll(resp.Body)
-
-	if resp.StatusCode == 200 {
-
-		type accessTokenStruct struct {
-			AccessToken string `json:"access_token"`
-		}
-
-		var accessTokenJSON accessTokenStruct
-
-		err = json.Unmarshal(body, &accessTokenJSON)
-		if err != nil {
-			return "", err
-		}
-
-		token = accessTokenJSON.AccessToken
-
-	} else {
-		return "", fmt.Errorf("ERROR: %s", string(body))
-	}
-
-	return token, nil
-}
-
-// newConfigMapForCR returns a configMap with the same name/namespace as the cr
-// func newConfigMapForCR(cr *dodasv1alpha1.Infrastructure) *corev1.ConfigMap {
-
-// 	return &corev1.ConfigMap{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:      cr.Name + "-template",
-// 			Namespace: cr.Namespace,
-// 		},
-// 		Data: map[string]string {
-// 			"template.yml": cr.Spec.Template,
-// 			"dodas.yml": cr.Spec.AuthFile,
-// 			"inf.id": "",
-// 			},
-// 	}
-// }
