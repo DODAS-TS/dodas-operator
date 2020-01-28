@@ -16,9 +16,9 @@ spec:
       containers:
         - name: dodas-operator
           # Replace this with the built image name
-          image: dciangot/dodas-operator:v1.0.0-rc18
+          image: dciangot/dodas-operator:v1.1.1
           command:
-          - dodas-operator
+            - dodas-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

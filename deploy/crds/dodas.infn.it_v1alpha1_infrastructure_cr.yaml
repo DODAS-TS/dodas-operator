@@ -3,9 +3,9 @@ kind: Infrastructure
 metadata:
   name: example-infrastructure
 spec:
-  name: test
-  image: dodasts/dodas-client:v0.3.3 
-  template: exampleTemplate 
+  name: test-infra
+  #image: dodasts/dodas-client:v0.3.3
+  template: mytemplate
   cloud:
     id: ost
     type: OpenStack
@@ -19,7 +19,7 @@ spec:
     id: im
     type: InfrastructureManager
     host: https://im-dodas.cloud.cnaf.infn.it/infrastructures
-    token: test
+    token: testme
   # allowrefresh:
   #   client_id:
   #   client_secret:

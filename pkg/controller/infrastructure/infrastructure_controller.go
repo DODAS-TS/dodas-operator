@@ -1,19 +1,17 @@
 package infrastructure
 
 import (
-	"fmt"
-	"bytes"
 	"context"
-	"reflect"
-	"net/http"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"reflect"
 	"strings"
 	"time"
-	"encoding/json"
 
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	//batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,11 +27,6 @@ import (
 )
 
 var log = logf.Log.WithName("controller_infrastructure")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
 
 // Add creates a new Infrastructure Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -105,8 +98,8 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		reqLogger.Info( err.Error() )
-		return reconcile.Result{ RequeueAfter: delay }, nil
+		reqLogger.Info(err.Error())
+		return reconcile.Result{RequeueAfter: delay}, nil
 	}
 
 	// TODO: if status == precendente
@@ -116,55 +109,24 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 	// everything ok go on
 	if (instance.Status.InfID != "") && (instance.Status.Error == "") {
-		
+
 		if instance.GetDeletionTimestamp() == nil {
 			// TODO: check if present in IM
 			return reconcile.Result{}, nil
-		} 
-		
+		}
+
 		// TODO: create function delete
 		// TODO: refresh token and delete
 
 		reqLogger.Info("Destroying cluster before deleting resource")
-		client := &http.Client{
-			Timeout: 300 * time.Second,
-		}
 
-		req, err := http.NewRequest("DELETE", string(instance.Spec.ImAuth.Host) + "/" + instance.Status.InfID , nil)
+		err := DeleteInf(instance)
 		if err != nil {
-			reqLogger.Error( err, "failure preparing http request" )
-			// if error persists retry later
-			reqLogger.Info( "Reconciling %s in %s", instance.Name, delay )
-			return reconcile.Result{ RequeueAfter: delay, }, nil
+			reqLogger.Error(err, "Failed to remove Inf")
+			reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
+			return reconcile.Result{RequeueAfter: delay}, nil
 		}
-
-		authHeader := PrepareAuthHeaders(instance)
-
-		req.Header.Set("Authorization", authHeader)
-
-		// Perform create request
-		resp, err := client.Do(req)
-		if err != nil {
-			// if error persists retry later
-			reqLogger.Error( err, "error contacting IM server" )
-			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-			return reconcile.Result{ RequeueAfter: delay, }, nil
-		}
-	
-		body, _ := ioutil.ReadAll(resp.Body)
-	
-
-		// save infID in status or the error
-		if resp.StatusCode == 200 {
-			reqLogger.Info(fmt.Sprintf("Removed infrastracture ID: %s", instance.Status.InfID))
-		} else {
-			// if error persists retry later
-			reqLogger.Info( string(body) )
-			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-			return reconcile.Result{ RequeueAfter: delay, }, nil 
-			//fmt.Errorf(string(body))
-		}
-
+		reqLogger.Info(fmt.Sprintf("Removed infrastracture ID: %s", instance.Status.InfID))
 
 		// remove finalizer
 		reqLogger.Info("Deletion successful, removing finalizer")
@@ -172,35 +134,35 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		err = r.client.Update(context.Background(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Infrastructure finalizer")
-			return reconcile.Result{ RequeueAfter: delay, }, nil
+			return reconcile.Result{RequeueAfter: delay}, nil
 		}
-		return reconcile.Result{}, nil
+		return reconcile.Result{RequeueAfter: delay}, nil
 	}
 
-    // Check if requested template ConfigMap already exists
+	// Check if requested template ConfigMap already exists
 	foundTemplate := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Template , Namespace: instance.Namespace}, foundTemplate)
-	if err != nil && errors.IsNotFound(err) {		
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Template, Namespace: instance.Namespace}, foundTemplate)
+	if err != nil && errors.IsNotFound(err) {
 		// if error persists retry later
 		errorMsg := fmt.Sprintf("No template found with name: %s", instance.Spec.Template)
-		reqLogger.Error( err, errorMsg )
+		reqLogger.Error(err, errorMsg)
 		if instance.Status.Error != errorMsg {
 			instance.Status.Error = errorMsg
 			instance.Status.Status = "error"
 			r.client.Status().Update(context.Background(), instance)
 		}
-		reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-		return reconcile.Result{ RequeueAfter: delay, }, nil
-	} else if  err != nil {
+		reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
+		return reconcile.Result{RequeueAfter: delay}, nil
+	} else if err != nil {
 		errorMsg := "Error looking for template"
-		reqLogger.Error( err, errorMsg )
+		reqLogger.Error(err, errorMsg)
 		if instance.Status.Error != errorMsg {
 			instance.Status.Error = errorMsg
 			instance.Status.Status = "error"
 			r.client.Status().Update(context.Background(), instance)
 		}
-		reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-		return reconcile.Result{ RequeueAfter: delay, }, nil
+		reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
+		return reconcile.Result{RequeueAfter: delay}, nil
 	}
 
 	var templateContent map[string]string
@@ -208,124 +170,39 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// check if template file is there
 	templateContent = foundTemplate.Data
 
-	//reqLogger.Info(fmt.Sprintf("Found configMap: %s == %s", instance.Spec.Template, foundTemplate.Name))
+	for _, value := range templateContent {
+		templateBytes := value
 
-	//reqLogger.Info(fmt.Sprintf("templateContent[\"template.yml\"] == %s", templateContent["template.yml"]))
+		instance.Status.Status = "creating"
+		r.client.Status().Update(context.Background(), instance)
 
-	if templateBytes, ok := templateContent["template.yml"]; ok {
-
-		// TODO create function create
-
-		client := &http.Client{
-			Timeout: 300 * time.Second,
-		}
-
-		// Prepare create request
-		req, err := http.NewRequest("POST", string(instance.Spec.ImAuth.Host), bytes.NewBuffer([]byte(templateBytes)))
-		if err != nil {
-			reqLogger.Error( err, "failure preparing http request" )
-			// if error persists retry later
-			if instance.Status.Error != err.Error() {
-				instance.Status.Error = err.Error()
-				instance.Status.Status = "error"
-				r.client.Status().Update(context.Background(), instance)
-			}
-			reqLogger.Info( "Reconciling %s in %s", instance.Name, delay )
-			return reconcile.Result{ RequeueAfter: delay, }, nil
-		}
-
-		req.Header.Set("Content-Type", "text/yaml")
-
-		authHeader := PrepareAuthHeaders(instance)
-
-		req.Header.Set("Authorization", authHeader)
-
-		reqLogger.Info("Performing create requests")
-
-		// Add finalizer (cant remove instance until I manage to destroy it)
+		// Insert finalizer before starting the creation
 		instance.SetFinalizers([]string{"delete"})
 		err = r.client.Update(context.Background(), instance)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Memcached with finalizer")
-			return reconcile.Result{ RequeueAfter: delay, }, nil
+			reqLogger.Error(err, "Failed to update finalizer")
+			return reconcile.Result{RequeueAfter: delay}, nil
 		}
 
-		// Perform create request
-		resp, err := client.Do(req)
+		infID, err := CreateInf(instance, []byte(templateBytes))
 		if err != nil {
-			// if error persists retry later
-			reqLogger.Error( err, "error contacting IM server" )
+			reqLogger.Error(err, "Failed to create Inf")
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
 				instance.Status.Status = "error"
 				r.client.Status().Update(context.Background(), instance)
 			}
-			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-			return reconcile.Result{ RequeueAfter: delay, }, nil
-		}
-	
-		body, _ := ioutil.ReadAll(resp.Body)
-	
-		stringSplit := strings.Split(string(body), "/")
-
-		// save infID in status or the error
-		if resp.StatusCode == 200 {
-			instance.Status.InfID = stringSplit[len(stringSplit)-1]
-			instance.Status.Error = ""
-			instance.Status.Status = "created"
-			r.client.Status().Update(context.Background(), instance)
-		} else {
-			// if error persists retry later
-			reqLogger.Info( string(body) )
-			if instance.Status.Error != string(body) {
-				instance.Status.Error =  string(body)
-				instance.Status.Status = "error"
-				r.client.Status().Update(context.Background(), instance)
-			}
-			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-			return reconcile.Result{ RequeueAfter: delay, }, nil 
-			//fmt.Errorf(string(body))
+			reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
+			return reconcile.Result{RequeueAfter: delay}, nil
 		}
 
-	} else {
-			errorMsg := "Please use template.yml in the key for template config map"
-			reqLogger.Info( errorMsg )
-			instance.Status.Error = errorMsg
-			r.client.Status().Update(context.Background(), instance)
-			reqLogger.Info( fmt.Sprintf("Reconciling %s in %s", instance.Name, delay) )
-			return reconcile.Result{ RequeueAfter: delay, }, nil
+		instance.Status.InfID = infID
+		instance.Status.Error = ""
+		instance.Status.Status = "created"
+		r.client.Status().Update(context.Background(), instance)
+		break
 	}
-
 	// GET TOKEN and SAVE refresh
-
-
-	// Set Infrastructure instance as the owner and controller
-	//if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
-	//	return reconcile.Result{}, err
-	//}
-
-	// // if timestamp in metadata.deletionTimestamp and create command finished (and infID)--> remove infID
-	// err = controllerutil.RemoveFinalizerWithError(instance, instance.GetFinalizers()[0])
-
-	// Check if this template ConfigMap already exists
-	// foundTemplate := &corev1.ConfigMap{}
-	// err = r.client.Get(context.TODO(), types.NamespacedName{Name: templateConfig.Name, Namespace: templateConfig.Namespace}, foundTemplate)
-	// if err != nil && errors.IsNotFound(err) {		
-
-	// 	reqLogger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", templateConfig.Namespace, "Config.Name", templateConfig.Name)
-	// 	err = r.client.Create(context.TODO(), templateConfig)
-	// 	if err != nil {
-	// 		return reconcile.Result{}, err
-	// 	}
-	// }
-	// instance.Status.InfID = string(foundJob.Status.Conditions[0].Status)
-	// err = r.client.Status().Update(context.Background(), instance)
-	// if err != nil {
-	// 	return reconcile.Result{}, err
-	// }
-
-	// Pod already exists - don't requeue
-	//reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", foundJob.Namespace, "Pod.Name", foundJob.Name)
 
 	return reconcile.Result{}, nil
 }
@@ -402,7 +279,6 @@ func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure)
 
 	client := &http.Client{
 		Timeout: 300 * time.Second,
-		
 	}
 
 	req, _ := http.NewRequest("GET", IAMTokenEndpoint, nil)
@@ -422,7 +298,7 @@ func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure)
 	if resp.StatusCode == 200 {
 
 		type accessTokenStruct struct {
-			AccessToken  string `json:"access_token"`
+			AccessToken string `json:"access_token"`
 		}
 
 		var accessTokenJSON accessTokenStruct
@@ -432,7 +308,7 @@ func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure)
 			return "", err
 		}
 
-		token = accessTokenJSON.AccessToken		
+		token = accessTokenJSON.AccessToken
 
 	} else {
 		return "", fmt.Errorf("ERROR: %s", string(body))
@@ -456,4 +332,3 @@ func RefreshToken(refreshToken string, clientConf *dodasv1alpha1.Infrastructure)
 // 			},
 // 	}
 // }
-
