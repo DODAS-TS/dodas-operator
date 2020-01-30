@@ -1,0 +1,7 @@
+apiVersion: dodas.infn.it/v1alpha1
+kind: HTCondorWN
+metadata:
+  name: example-htcondorwn
+spec:
+  # Add fields here
+  size: 3

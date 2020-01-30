@@ -133,12 +133,12 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
-      additionalPrinterColumns:
-        - name: InfID
-          type: string
-          description: Infrastructure ID
-          JSONPath: .status.infID
-        - name: status
-          type: string
-          description: deployment status
-          JSONPath: .status.status
+  additionalPrinterColumns:
+    - name: InfID
+      type: string
+      description: Infrastructure ID
+      JSONPath: .status.infID
+    - name: status
+      type: string
+      description: deployment status
+      JSONPath: .status.status
