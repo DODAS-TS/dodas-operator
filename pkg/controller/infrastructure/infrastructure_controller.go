@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	dodas "github.com/dodas-ts/dodas-go-client/cmd"
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -99,10 +100,77 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{RequeueAfter: delay}, nil
 	}
 
-	// TODO: if status == precendente
+	dodasClient := dodas.Conf{
+		Im:    dodas.ConfIM(instance.Spec.ImAuth),
+		Cloud: dodas.ConfCloud(instance.Spec.CloudAuth),
+	}
+
+	// Define a new secret  object for token and refresh token
+	refreshSecret := newRefreshToken(instance)
+
+	// Set instance as the owner and controller
+	if err := controllerutil.SetControllerReference(instance, refreshSecret, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if instance.Spec.AllowRefresh.IAMTokenEndpoint != "" {
+		// Check if this Secret for tokens already exists
+		found := &corev1.Secret{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: refreshSecret.Name, Namespace: refreshSecret.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new Pod", "refreshSecret.Namespace", refreshSecret.Namespace, "refreshSecret.Name", refreshSecret.Name)
+			err = r.client.Create(context.TODO(), refreshSecret)
+			if err != nil {
+				return reconcile.Result{RequeueAfter: delay}, err
+			}
+		} else if err != nil {
+			return reconcile.Result{RequeueAfter: delay}, err
+		}
+
+		refreshRequest := dodas.RefreshRequest{
+			Endpoint:     instance.Spec.AllowRefresh.IAMTokenEndpoint,
+			ClientID:     instance.Spec.AllowRefresh.ClientID,
+			ClientSecret: instance.Spec.AllowRefresh.ClientSecret,
+			AccessToken:  instance.Spec.ImAuth.Token,
+		}
+		// Get refresh token if not set
+		if refreshSecret.StringData["RefreshToken"] == "" {
+
+			refreshToken, err := dodasClient.GetRefreshToken(refreshRequest)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			refreshSecret.StringData["RefreshToken"] = refreshToken
+			err = r.client.Update(context.Background(), refreshSecret)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+
+		// TODO: Check if access token is valid otherwise
+
+		refreshRequest.RefreshToken = refreshSecret.StringData["RefreshToken"]
+
+		accessToken, err := dodasClient.GetAccessToken(refreshRequest)
+		if err != nil {
+			panic(err)
+		}
+
+		refreshSecret.StringData["AccessToken"] = accessToken
+		err = r.client.Update(context.Background(), refreshSecret)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		instance.Spec.ImAuth.Token = accessToken
+		instance.Spec.CloudAuth.Password = accessToken
+	}
+
 	// What happens if edit when already defined?
+	// TODO: use dodas client update to check if the template is changed
 	// TODO: check for deletionTimestamp set
-	// TODO: if infID but updated
+	// TODO: update status and outputs
 
 	// everything ok go on
 	if (instance.Status.InfID != "") && (instance.Status.Error == "") {
@@ -117,7 +185,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		reqLogger.Info("Destroying cluster before deleting resource")
 
-		err := DeleteInf(instance)
+		err := dodasClient.DestroyInf(string(instance.Spec.ImAuth.Host), instance.Status.InfID)
 		if err != nil {
 			reqLogger.Error(err, "Failed to remove Inf")
 			reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
@@ -181,7 +249,17 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{RequeueAfter: delay}, nil
 		}
 
-		infID, err := CreateInf(instance, []byte(templateBytes))
+		err := dodasClient.Validate(templateBytes)
+		if err != nil {
+			reqLogger.Error(err, "Invalid template")
+			if instance.Status.Error != err.Error() {
+				instance.Status.Error = err.Error()
+				instance.Status.Status = "error"
+				r.client.Status().Update(context.Background(), instance)
+			}
+		}
+
+		infID, err := dodasClient.CreateInf(string(instance.Spec.ImAuth.Host), templateBytes)
 		if err != nil {
 			reqLogger.Error(err, "Failed to create Inf")
 			if instance.Status.Error != err.Error() {
@@ -202,4 +280,18 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// GET TOKEN and SAVE refresh
 
 	return reconcile.Result{}, nil
+}
+
+func newRefreshToken(cr *dodasv1alpha1.Infrastructure) *corev1.Secret {
+
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-token",
+			Namespace: cr.Namespace,
+		},
+		StringData: map[string]string{
+			"RefreshToken": "",
+			"AccessToken":  cr.Spec.ImAuth.Token,
+		},
+	}
 }

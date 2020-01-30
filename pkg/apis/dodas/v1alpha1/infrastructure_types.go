@@ -21,7 +21,6 @@ type CloudAuthFields struct {
 	ServiceRegion string `json:"service_region,omitempty"`
 }
 
-
 // IMAuthFields fields for cloud provider
 type IMAuthFields struct {
 	ID       string `json:"id"`
@@ -34,19 +33,22 @@ type IMAuthFields struct {
 
 // TokenRefreshConf ..
 type TokenRefreshConf struct {
-	ClientID  string `json:"client_id"`
-	ClientSecret  string `json:"client_secret"`
+	ClientID         string `json:"client_id"`
+	ClientSecret     string `json:"client_secret"`
 	IAMTokenEndpoint string `json:"iam_endpoint"`
 }
 
 // InfrastructureSpec defines the desired state of Infrastructure
 type InfrastructureSpec struct {
-	Name      string             `json:"name"`
-	Image     string             `json:"image"`
-	CloudAuth CloudAuthFields `json:"cloud"`
-	ImAuth    IMAuthFields `json:"im"`
+	Name         string           `json:"name"`
+	Image        string           `json:"image"`
+	CloudAuth    CloudAuthFields  `json:"cloud"`
+	ImAuth       IMAuthFields     `json:"im"`
 	AllowRefresh TokenRefreshConf `json:"allowrefresh,omitempty"`
-	Template string `json:"template"`
+	Template     string           `json:"template"`
+
+	// TODO: allow import inf
+	//ImportInfID string `json:"import_inf_id"`
 
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -58,9 +60,9 @@ type InfrastructureStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	InfID      string             `json:"infID"`
-	Status      string             `json:"status"`
-	Error      string             `json:"error"`
+	InfID  string `json:"infID"`
+	Status string `json:"status"`
+	Error  string `json:"error"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
