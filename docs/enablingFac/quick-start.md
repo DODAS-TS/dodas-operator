@@ -186,7 +186,7 @@ spec:
     type: InfrastructureManager
     host: https://im-dodas.cloud.cnaf.infn.it/infrastructures
     token: <your IAM token here>
-  # If you want to use IAM for token refreshing
+  # If you want to use IAM for token exchange
   allowrefresh:
     client_id: <exchange token client id>
     client_secret: <exchange token client token>

@@ -1,10 +1,15 @@
 site_name: DODAS Kubernetes operator
 theme:
-    name: material
-    logo:
-        icon: cloud_circle
-    palette:
-        primary: "Deep Blue"
-        accent: "Light Blue"
+  name: material
+  logo:
+    icon: cloud_circle
+  palette:
+    primary: "Deep Blue"
+    accent: "Light Blue"
+nav:
+  - Home: "README.md"
+  - Quick Start:
+      - Standalone IM: "standalone/quick-start.md"
+      - Community IM: "enablingFac/quick-start.md"
 repo_name: "dodas-ts/dodas-operator"
 repo_url: "https://github.com/DODAS-TS/dodas-operator"
