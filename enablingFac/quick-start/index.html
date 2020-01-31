@@ -36,7 +36,7 @@
     
     
       
-        <title>Infrastructure manager community instance - DODAS Kubernetes operator</title>
+        <title>Community IM - DODAS Kubernetes operator</title>
       
     
     
@@ -111,7 +111,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Infrastructure manager community instance
+                Community IM
               
             </span>
           
@@ -222,8 +222,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../.." title="DODAS Kubernetes operator" class="md-nav__link">
-      DODAS Kubernetes operator
+    <a href="../.." title="Home" class="md-nav__link">
+      Home
     </a>
   </li>
 
@@ -240,14 +240,26 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2" checked>
     
     <label class="md-nav__link" for="nav-2">
-      enablingFac
+      Quick Start
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
       <label class="md-nav__title" for="nav-2">
-        enablingFac
+        Quick Start
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
         
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../standalone/quick-start/" title="Standalone IM" class="md-nav__link">
+      Standalone IM
+    </a>
+  </li>
+
         
           
           
@@ -264,11 +276,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        Infrastructure manager community instance
+        Community IM
       </label>
     
-    <a href="./" title="Infrastructure manager community instance" class="md-nav__link md-nav__link--active">
-      Infrastructure manager community instance
+    <a href="./" title="Community IM" class="md-nav__link md-nav__link--active">
+      Community IM
     </a>
     
       
@@ -330,42 +342,6 @@
   
 </nav>
     
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
-    
-    <label class="md-nav__link" for="nav-3">
-      Standalone
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-3">
-        Standalone
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../standalone/quick-start/" title="Quick start" class="md-nav__link">
-      Quick start
-    </a>
   </li>
 
         
@@ -491,7 +467,7 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 <h3 id="create-a-config-map-with-your-tosca-template">Create a config map with your tosca template</h3>
 <p>Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.</p>
 <blockquote>
-<p>More complex examples for setting up end-to-end application can be found <a href="">here</a></p>
+<p>More complex examples and documentation for setting up end-to-end application can be found <a href="">here</a></p>
 </blockquote>
 <p>First save the content below into <code>test-deployment.yaml</code></p>
 <pre><code class="yaml">tosca_definitions_version: tosca_simple_yaml_1_0
@@ -628,7 +604,7 @@ spec:
     type: InfrastructureManager
     host: https://im-dodas.cloud.cnaf.infn.it/infrastructures
     token: &lt;your IAM token here&gt;
-  # If you want to use IAM for token refreshing
+  # If you want to use IAM for token exchange
   allowrefresh:
     client_id: &lt;exchange token client id&gt;
     client_secret: &lt;exchange token client token&gt;
@@ -675,7 +651,7 @@ example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../.." title="DODAS Kubernetes operator" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../../standalone/quick-start/" title="Standalone IM" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -684,25 +660,11 @@ example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                DODAS Kubernetes operator
+                Standalone IM
               </span>
             </div>
           </a>
         
-        
-          <a href="../../standalone/quick-start/" title="Quick start" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                Quick start
-              </span>
-            </div>
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-            </div>
-          </a>
         
       </nav>
     </div>
