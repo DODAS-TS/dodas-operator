@@ -270,8 +270,22 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#render-the-page-using-mkdocs" class="md-nav__link">
+    Render the page using Mkdocs
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-us" class="md-nav__link">
+    Contact us
+  </a>
   
 </li>
       
@@ -376,8 +390,22 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#render-the-page-using-mkdocs" class="md-nav__link">
+    Render the page using Mkdocs
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-us" class="md-nav__link">
+    Contact us
+  </a>
   
 </li>
       
@@ -402,18 +430,22 @@
                 
                 <h1 id="dodas-kubernetes-operator">DODAS Kubernetes operator</h1>
 <p>Create and delete DODAS clusters as Kubernetes resources (just like pod et al.).</p>
-<p>Your deployments will be created and managed by the <a href="">InfrastructureManager</a>(IM).
+<p>Your deployments will be created and managed by the <a href="https://www.grycap.upv.es/im/index.php">InfrastructureManager</a>(IM).
 To start playing with the operatori we provide a quick start guide with two options:</p>
 <ul>
-<li>using the <strong><a href="https://dodas-ts.github.io/dodas-operator/enablingFac/quick-start/">community instance of IM</a></strong> (required free registration for evaluation purpose <a href="">here</a>)</li>
+<li>using the <strong><a href="https://dodas-ts.github.io/dodas-operator/enablingFac/quick-start/">community instance of IM</a></strong> (required free registration for evaluation purpose <a href="https://dodas-iam.cloud.cnaf.infn.it">here</a>)</li>
 <li>a <strong><a href="https://dodas-ts.github.io/dodas-operator/standalone/quick-start/">standalone setup</a></strong> where IM will be deployed together with the dodas-operator</li>
 </ul>
+<blockquote>
+<p><em>N.B</em> All of the pre-compiled templates provided by DODAS use the helm charts defined and documented <a href="https://github.com/DODAS-TS/helm_charts/tree/master/stable">here</a>.
+Therefore <strong>all the following applications can be installed as they are on top of any k8s instance with <a href="https://helm.sh/">Helm</a></strong></p>
+</blockquote>
 <h2 id="developer-guide">Developer guide</h2>
 <p>If you want to contibute please consider the following</p>
 <h3 id="dev-requirements">Dev Requirements</h3>
 <ul>
 <li>go &gt; 1.12</li>
-<li><a href="">operator-sdk</a></li>
+<li><a href="https://github.com/operator-framework/operator-sdk/blob/master/doc/user-guide.md">operator-sdk</a></li>
 </ul>
 <h3 id="how-to-contribute">How to contribute</h3>
 <ol>
@@ -422,6 +454,22 @@ To start playing with the operatori we provide a quick start guide with two opti
 <li>create a pull request</li>
 </ol>
 <p>Thanks!</p>
+<h3 id="render-the-page-using-mkdocs">Render the page using Mkdocs</h3>
+<p>You will need <a href="https://www.mkdocs.org/">mkdocs</a> installed on your machine. You can install it with pip:</p>
+<pre><code class="bash">pip install mkdocs mkdocs-material
+</code></pre>
+
+<p>To start a real time rendering of the doc just type:</p>
+<pre><code class="bash">mkdocs serve
+</code></pre>
+
+<p>The web page generated will be now update at each change you do on the local folder.</p>
+<h2 id="contact-us">Contact us</h2>
+<p>DODAS Team provides two support channels, email and Slack channel.</p>
+<ul>
+<li><strong>mailing list</strong>: send a message to the following list dodas-support@lists.infn.it</li>
+<li><strong>slack channel</strong>: join us on <a href="https://dodas-infn.slack.com/archives/CAJ6VG71A">Slack Channel</a></li>
+</ul>
                 
                   
                 
