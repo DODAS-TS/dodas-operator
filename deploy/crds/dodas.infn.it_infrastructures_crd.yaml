@@ -142,3 +142,7 @@ spec:
       type: string
       description: deployment status
       JSONPath: .status.status
+    - name: error
+      type: string
+      description: deployment error message
+      JSONPath: .status.error

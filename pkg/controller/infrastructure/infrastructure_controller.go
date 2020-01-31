@@ -172,6 +172,19 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	// TODO: check for deletionTimestamp set
 	// TODO: update status and outputs
 
+	// if creation failed somehow, allow deletion
+	if (instance.Status.InfID == "") && (instance.Status.Status == "creating") {
+		// remove finalizer
+		reqLogger.Info("Creation failed somehow, allow deletion")
+		instance.SetFinalizers([]string{})
+		err = r.client.Update(context.Background(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Infrastructure finalizer")
+			return reconcile.Result{RequeueAfter: delay}, nil
+		}
+		return reconcile.Result{RequeueAfter: delay}, nil
+	}
+
 	// everything ok go on
 	if (instance.Status.InfID != "") && (instance.Status.Error == "") {
 
@@ -186,9 +199,15 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		reqLogger.Info("Destroying cluster before deleting resource")
 
 		err := dodasClient.DestroyInf(string(instance.Spec.ImAuth.Host), instance.Status.InfID)
+		// TODO: check if error is: infra do not exist anymore
 		if err != nil {
 			reqLogger.Error(err, "Failed to remove Inf")
 			reqLogger.Info(fmt.Sprintf("Reconciling %s in %s", instance.Name, delay))
+
+			instance.Status.Error = fmt.Sprintf("Failed to destro Infra: %s", err.Error())
+			instance.Status.Status = "error"
+			r.client.Status().Update(context.Background(), instance)
+
 			return reconcile.Result{RequeueAfter: delay}, nil
 		}
 		reqLogger.Info(fmt.Sprintf("Removed infrastracture ID: %s", instance.Status.InfID))
@@ -249,7 +268,8 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{RequeueAfter: delay}, nil
 		}
 
-		err := dodasClient.Validate(templateBytes)
+		// TODO: pass bytes instead of file
+		err := dodasClient.Validate([]byte(templateBytes))
 		if err != nil {
 			reqLogger.Error(err, "Invalid template")
 			if instance.Status.Error != err.Error() {
@@ -259,9 +279,11 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			}
 		}
 
-		infID, err := dodasClient.CreateInf(string(instance.Spec.ImAuth.Host), templateBytes)
+		infID, err := dodasClient.CreateInf(string(instance.Spec.ImAuth.Host), []byte(templateBytes))
 		if err != nil {
 			reqLogger.Error(err, "Failed to create Inf")
+
+			// TODO: remove finalizer
 			if instance.Status.Error != err.Error() {
 				instance.Status.Error = err.Error()
 				instance.Status.Status = "error"
