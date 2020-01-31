@@ -4,7 +4,7 @@ metadata:
   name: example-infrastructure
 spec:
   name: test-infra
-  #image: dodasts/dodas-client:v0.3.3
+  image: dodasts/dodas-client:v0.3.3
   template: mytemplate
   cloud:
     id: ost
@@ -20,7 +20,8 @@ spec:
     type: InfrastructureManager
     host: https://im-dodas.cloud.cnaf.infn.it/infrastructures
     token: testme
-  # allowrefresh:
-  #   client_id:
-  #   client_secret:
-  #   iam_endpoint:
+  # If you want to use IAM for token refreshing
+  allowrefresh:
+    client_id: <exchange token client id>
+    client_secret: <exchange token client token>
+    iam_endpoint: https://dodas-iam.cloud.cnaf.infn.it/token

@@ -43,7 +43,7 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 
 Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.
 
-> More complex examples for setting up end-to-end application can be found [here]()
+> More complex examples and documentation for setting up end-to-end application can be found [here]()
 
 First save the content below into `test-deployment.yaml`
 

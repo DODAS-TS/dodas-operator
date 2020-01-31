@@ -1,0 +1,23 @@
+apiVersion: dodas.infn.it/v1alpha1
+kind: Infrastructure
+metadata:
+  name: example-infrastructure
+spec:
+  name: test-infra
+  image: dodasts/dodas-client:v0.3.3
+  template: mytemplate
+  cloud:
+    id: ost
+    type: OpenStack
+    username: <your username>
+    password: testme
+    host: https://cloud.recas.ba.infn.it:5000/
+    tenant: <your tenant>
+    auth_version: 3.x_password
+    service_region: recas-cloud
+  im:
+    id: im
+    type: InfrastructureManager
+    host: im-backend.default.svc.cluster.local:8800
+    username: testme
+    password:

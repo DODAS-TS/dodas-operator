@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: imdb-pv
+  labels:
+    name: imdb-pv
+spec:
+  capacity:
+    storage: "100M"
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: "/tmp/"
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/os
+          operator: In
+          values:
+          - linux
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: imdb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: "99M"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: im-backend
+  labels:
+    name: im-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: im-backend
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        name: im-backend
+    spec:
+      containers:
+        - name: im
+          image: grycap/im:1.9.0
+          resources:
+            limits:
+              memory: "1.2G"
+              cpu: "1.5"
+            requests:
+              memory: "1G"
+              cpu: "1"
+          ports:
+            - containerPort: 8800
+          imagePullPolicy: Always
+          env:
+            - name: IM_DATA_DB
+              value: /db/inf.dat
+          volumeMounts:
+            - name: imdb
+              mountPath: /db
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: 8800
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+      volumes:
+        - name: imdb
+          persistentVolumeClaim:
+            claimName: imdb-pv
+  selector:
+    matchLabels:
+      name: im-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: im-backend
+spec:
+  ports:
+    - name: restapi
+      port: 8800
+  selector:
+    name: im-backend

@@ -141,16 +141,20 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 				return reconcile.Result{}, err
 			}
 
+			reqLogger.Info(fmt.Sprintf("Adding refresh token to secret: %s", refreshToken))
 			refreshSecret.StringData["RefreshToken"] = refreshToken
 			err = r.client.Update(context.Background(), refreshSecret)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+			reqLogger.Info(fmt.Sprintf("Adding refresh token added: %s", refreshToken))
 		}
 
 		// TODO: Check if access token is valid otherwise
 
 		refreshRequest.RefreshToken = refreshSecret.StringData["RefreshToken"]
+
+		reqLogger.Info(fmt.Sprintf("Using refresh token to get the access one: %s", refreshRequest.RefreshToken))
 
 		accessToken, err := dodasClient.GetAccessToken(refreshRequest)
 		if err != nil {
