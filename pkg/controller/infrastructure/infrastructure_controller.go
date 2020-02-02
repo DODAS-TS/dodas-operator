@@ -101,8 +101,9 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	dodasClient := dodas.Conf{
-		Im:    dodas.ConfIM(instance.Spec.ImAuth),
-		Cloud: dodas.ConfCloud(instance.Spec.CloudAuth),
+		Im:           dodas.ConfIM(instance.Spec.ImAuth),
+		Cloud:        dodas.ConfCloud(instance.Spec.CloudAuth),
+		AllowRefresh: dodas.TokenRefreshConf(instance.Spec.AllowRefresh),
 	}
 
 	// Define a new secret  object for token and refresh token
@@ -127,16 +128,10 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{RequeueAfter: delay}, err
 		}
 
-		refreshRequest := dodas.RefreshRequest{
-			Endpoint:     instance.Spec.AllowRefresh.IAMTokenEndpoint,
-			ClientID:     instance.Spec.AllowRefresh.ClientID,
-			ClientSecret: instance.Spec.AllowRefresh.ClientSecret,
-			AccessToken:  instance.Spec.ImAuth.Token,
-		}
 		// Get refresh token if not set
 		if refreshSecret.StringData["RefreshToken"] == "" {
 
-			refreshToken, err := dodasClient.GetRefreshToken(refreshRequest)
+			refreshToken, err := dodasClient.GetRefreshToken()
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -151,12 +146,9 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 		}
 
 		// TODO: Check if access token is valid otherwise
+		reqLogger.Info(fmt.Sprintf("Using refresh token to get the access one: %s", refreshSecret.StringData["RefreshToken"]))
 
-		refreshRequest.RefreshToken = refreshSecret.StringData["RefreshToken"]
-
-		reqLogger.Info(fmt.Sprintf("Using refresh token to get the access one: %s", refreshRequest.RefreshToken))
-
-		accessToken, err := dodasClient.GetAccessToken(refreshRequest)
+		accessToken, err := dodasClient.GetAccessToken(refreshSecret.StringData["RefreshToken"])
 		if err != nil {
 			panic(err)
 		}
