@@ -466,7 +466,7 @@ kubectl apply -f deploy/im.yaml
 <h2 id="install-the-operator">Install the operator</h2>
 <p>Setup the operator and the dodas infrastructure CustomResource definition as follow:</p>
 <pre><code class="bash"># create infrastructure custom resources
-kubectl apply -f deploy/crds/dodas.infn.it_infrastructures_crd.yaml
+kubectl apply -f deploy/crds/infrastructures_crd.yaml
 
 # create service account and roles for operator
 kubectl apply -f deploy/service_account.yaml
@@ -489,7 +489,7 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 <blockquote>
 <p>More complex examples and documentation for setting up end-to-end application can be found <a href="https://dodas-ts.github.io/dodas-templates/">here</a></p>
 </blockquote>
-<p>First save the content below into <code>test-deployment.yaml</code></p>
+<p>First save the content below into <code>test-deployment.yaml</code> and fill up the fields between <code>&lt;&gt;</code>.</p>
 <pre><code class="yaml">tosca_definitions_version: tosca_simple_yaml_1_0
 
 imports:
@@ -624,7 +624,7 @@ spec:
   im:
     id: im
     type: InfrastructureManager
-    host: im-backend.default.svc.cluster.local:8800
+    host: http://im-backend.default.svc.cluster.local:8800/infrastructures
     username: test
     password: test
 </code></pre>
