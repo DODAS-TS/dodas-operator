@@ -3,9 +3,10 @@
 ## Requirements
 
 - A kubernetes cluster > 1.13
-- kubectl
-- [tosca template]() to be used with Infrastructure Manager
-- [Indigo IAM credentials]()
+  - kubectl available
+- [Indigo IAM credentials](https://indigo-iam.github.io/docs/v/current/user-guide/)
+  - you can obtain an account registering [here](https://dodas-iam.cloud.cnaf.infn.it)
+- [IAM client](https://indigo-iam.github.io/docs/v/current/user-guide/api/oauth-token-exchange.html) for token exchange
 
 ## Install the operator
 
@@ -30,7 +31,7 @@ kubectl apply -f deploy/operator.yaml
 And then just check if everythin went fine with:
 
 ```bash
-$ kubectl get pod
+kubectl get pod
 ```
 
 ```text
@@ -43,7 +44,7 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 
 Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.
 
-> More complex examples and documentation for setting up end-to-end application can be found [here]()
+> More complex examples and documentation for setting up end-to-end application can be found [here](https://dodas-ts.github.io/dodas-templates/)
 
 First save the content below into `test-deployment.yaml`
 
@@ -160,9 +161,9 @@ kubectl create configmap mytemplate --from-file=test-deployment.yaml
 
 ### Test a deployment
 
-Create a manifest `my-infra.yml` with DODAS Infrastructure resource specifying the credentials for both the [cloud provider]() and [Infrastructure manager]().
+Create a manifest `my-infra.yml` with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.
 
-> The sintax used is similar to what used for dodas client [here]()
+> The sintax used is similar to what used for dodas client [here](https://dodas-ts.github.io/dodas-go-client/)
 
 ```yaml
 apiVersion: dodas.infn.it/v1alpha1
@@ -202,7 +203,7 @@ kubectl apply -f my-infra.yml
 If everything went well you should be able to see you InfrastructureID of the deployment appearing here:
 
 ```bash
-$ kubectl get infrastructures
+kubectl get infrastructures
 ```
 
 ```text
@@ -215,7 +216,7 @@ example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
 Just type:
 
 ```bash
-$ kubectl delete infrastructure example-infrastructure
+kubectl delete infrastructure example-infrastructure
 ```
 
 ```text

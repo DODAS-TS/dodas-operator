@@ -3,7 +3,7 @@ module github.com/dodas-ts/dodas-operator
 go 1.13
 
 require (
-	github.com/dodas-ts/dodas-go-client v1.0.0-rc1.0.20200202113010-c7b10deabf6e
+	github.com/dodas-ts/dodas-go-client v1.0.0-rc1.0.20200203102329-7c654f2e04ed
 	github.com/operator-framework/operator-sdk v0.14.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.0.0

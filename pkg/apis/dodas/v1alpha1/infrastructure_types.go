@@ -36,7 +36,8 @@ type TokenRefreshConf struct {
 	ClientID         string `json:"client_id"`
 	ClientSecret     string `json:"client_secret"`
 	IAMTokenEndpoint string `json:"iam_endpoint"`
-	DumpFile         string `json:"dump_file"`
+	RefreshTokenFile string `json:"refresh_file"`
+	AccessTokenFile  string `json:"access_file"`
 }
 
 // InfrastructureSpec defines the desired state of Infrastructure

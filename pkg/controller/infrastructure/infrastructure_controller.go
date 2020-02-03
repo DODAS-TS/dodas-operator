@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	dodas "github.com/dodas-ts/dodas-go-client/cmd"
@@ -145,22 +146,35 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			reqLogger.Info(fmt.Sprintf("Adding refresh token added: %s", refreshToken))
 		}
 
-		// TODO: Check if access token is valid otherwise
-		reqLogger.Info(fmt.Sprintf("Using refresh token to get the access one: %s", refreshSecret.StringData["RefreshToken"]))
+		var accessToken string
 
-		accessToken, err := dodasClient.GetAccessToken(refreshSecret.StringData["RefreshToken"])
+		// Check if access token is valid otherwise
+		_, err = dodasClient.ListInfIDs()
 		if err != nil {
-			panic(err)
+			re := regexp.MustCompile(`^.*OIDC auth Token expired`)
+			if re.Match([]byte(err.Error())) {
+				reqLogger.Info(fmt.Sprintf("Token expired. Using refresh token to get the access one: %s", refreshSecret.StringData["RefreshToken"]))
+
+				accessToken, err = dodasClient.GetAccessToken(refreshSecret.StringData["RefreshToken"])
+				if err != nil {
+					panic(err)
+				}
+
+				refreshSecret.StringData["AccessToken"] = accessToken
+				err = r.client.Update(context.Background(), refreshSecret)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+
+			}
+		} else {
+			accessToken = refreshSecret.StringData["AccessToken"]
 		}
 
-		refreshSecret.StringData["AccessToken"] = accessToken
-		err = r.client.Update(context.Background(), refreshSecret)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
+		// TODO: Check wheter cloud or im uses the token auth
 		instance.Spec.ImAuth.Token = accessToken
 		instance.Spec.CloudAuth.Password = accessToken
+
 	}
 
 	// What happens if edit when already defined?
@@ -194,7 +208,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 
 		reqLogger.Info("Destroying cluster before deleting resource")
 
-		err := dodasClient.DestroyInf(string(instance.Spec.ImAuth.Host), instance.Status.InfID)
+		err := dodasClient.DestroyInf(instance.Status.InfID)
 		// TODO: check if error is: infra do not exist anymore
 		if err != nil {
 			reqLogger.Error(err, "Failed to remove Inf")
@@ -275,7 +289,7 @@ func (r *ReconcileInfrastructure) Reconcile(request reconcile.Request) (reconcil
 			}
 		}
 
-		infID, err := dodasClient.CreateInf(string(instance.Spec.ImAuth.Host), []byte(templateBytes))
+		infID, err := dodasClient.CreateInf([]byte(templateBytes))
 		if err != nil {
 			reqLogger.Error(err, "Failed to create Inf")
 
