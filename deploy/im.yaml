@@ -82,7 +82,7 @@ spec:
       volumes:
         - name: imdb
           persistentVolumeClaim:
-            claimName: imdb-pv
+            claimName: imdb-pvc
   selector:
     matchLabels:
       name: im-backend
