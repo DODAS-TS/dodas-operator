@@ -29,7 +29,7 @@ Setup the operator and the dodas infrastructure CustomResource definition as fol
 
 ```bash
 # create infrastructure custom resources
-kubectl apply -f deploy/crds/dodas.infn.it_infrastructures_crd.yaml
+kubectl apply -f deploy/crds/infrastructures_crd.yaml
 
 # create service account and roles for operator
 kubectl apply -f deploy/service_account.yaml
