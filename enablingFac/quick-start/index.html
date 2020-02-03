@@ -434,9 +434,10 @@
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>A kubernetes cluster &gt; 1.13</li>
-<li>kubectl</li>
-<li><a href="">tosca template</a> to be used with Infrastructure Manager</li>
-<li><a href="">Indigo IAM credentials</a></li>
+<li>kubectl available</li>
+<li><a href="https://indigo-iam.github.io/docs/v/current/user-guide/">Indigo IAM credentials</a></li>
+<li>you can obtain an account registering <a href="https://dodas-iam.cloud.cnaf.infn.it">here</a></li>
+<li><a href="https://indigo-iam.github.io/docs/v/current/user-guide/api/oauth-token-exchange.html">IAM client</a> for token exchange</li>
 </ul>
 <h2 id="install-the-operator">Install the operator</h2>
 <p>Setup the operator and the dodas infrastructure CustomResource definition as follow:</p>
@@ -456,7 +457,7 @@ kubectl apply -f deploy/operator.yaml
 </code></pre>
 
 <p>And then just check if everythin went fine with:</p>
-<pre><code class="bash">$ kubectl get pod
+<pre><code class="bash">kubectl get pod
 </code></pre>
 
 <pre><code class="text"># kubectl get pod
@@ -467,7 +468,7 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 <h3 id="create-a-config-map-with-your-tosca-template">Create a config map with your tosca template</h3>
 <p>Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.</p>
 <blockquote>
-<p>More complex examples and documentation for setting up end-to-end application can be found <a href="">here</a></p>
+<p>More complex examples and documentation for setting up end-to-end application can be found <a href="https://dodas-ts.github.io/dodas-templates/">here</a></p>
 </blockquote>
 <p>First save the content below into <code>test-deployment.yaml</code></p>
 <pre><code class="yaml">tosca_definitions_version: tosca_simple_yaml_1_0
@@ -579,9 +580,9 @@ topology_template:
 </code></pre>
 
 <h3 id="test-a-deployment">Test a deployment</h3>
-<p>Create a manifest <code>my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the <a href="">cloud provider</a> and <a href="">Infrastructure manager</a>.</p>
+<p>Create a manifest <code>my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.</p>
 <blockquote>
-<p>The sintax used is similar to what used for dodas client <a href="">here</a></p>
+<p>The sintax used is similar to what used for dodas client <a href="https://dodas-ts.github.io/dodas-go-client/">here</a></p>
 </blockquote>
 <pre><code class="yaml">apiVersion: dodas.infn.it/v1alpha1
 kind: Infrastructure
@@ -616,7 +617,7 @@ spec:
 </code></pre>
 
 <p>If everything went well you should be able to see you InfrastructureID of the deployment appearing here:</p>
-<pre><code class="bash">$ kubectl get infrastructures
+<pre><code class="bash">kubectl get infrastructures
 </code></pre>
 
 <pre><code class="text">NAME                     INFID                                  STATUS
@@ -625,7 +626,7 @@ example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
 
 <h3 id="destroy-the-deployment">Destroy the deployment</h3>
 <p>Just type:</p>
-<pre><code class="bash">$ kubectl delete infrastructure example-infrastructure
+<pre><code class="bash">kubectl delete infrastructure example-infrastructure
 </code></pre>
 
 <pre><code class="text">infrastructure.dodas.infn.it &quot;example-infrastructure&quot; deleted
