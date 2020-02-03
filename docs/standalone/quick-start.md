@@ -55,7 +55,7 @@ Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack res
 
 > More complex examples and documentation for setting up end-to-end application can be found [here](https://dodas-ts.github.io/dodas-templates/)
 
-First save the content below into `test-deployment.yaml`
+First save the content below into `test-deployment.yaml` and fill up the fields between `<>`.
 
 ```yaml
 tosca_definitions_version: tosca_simple_yaml_1_0
@@ -196,7 +196,7 @@ spec:
   im:
     id: im
     type: InfrastructureManager
-    host: im-backend.default.svc.cluster.local:8800
+    host: http://im-backend.default.svc.cluster.local:8800/infrastructures
     username: test
     password: test
 ```
