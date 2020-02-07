@@ -441,196 +441,196 @@
 </ul>
 <h2 id="install-the-operator">Install the operator</h2>
 <p>Setup the operator and the dodas infrastructure CustomResource definition as follow:</p>
-<pre><code class="bash">git clone https://github.com/dodas-ts/dodas-operator
-cd dodas-operator
+<div class="codehilite"><pre><span></span>git clone https://github.com/dodas-ts/dodas-operator
+<span class="nb">cd</span> dodas-operator
 
-# create infrastructure custom resources
+<span class="c1"># create infrastructure custom resources</span>
 kubectl apply -f deploy/crds/infrastructures_crd.yaml
 
-# create service account and roles for operator
+<span class="c1"># create service account and roles for operator</span>
 kubectl apply -f deploy/service_account.yaml
 kubectl apply -f deploy/role.yaml
 kubectl apply -f deploy/role_binding.yaml
 
-# deploy the operator
+<span class="c1"># deploy the operator</span>
 kubectl apply -f deploy/operator.yaml
-</code></pre>
+</pre></div>
 
 <p>And then just check if everythin went fine with:</p>
-<pre><code class="bash">kubectl get pod
-</code></pre>
+<div class="codehilite"><pre><span></span>kubectl get pod
+</pre></div>
 
-<pre><code class="text"># kubectl get pod
+<div class="codehilite"><pre><span></span># kubectl get pod
 NAME                              READY   STATUS    RESTARTS   AGE
 dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
-</code></pre>
+</pre></div>
 
 <h3 id="create-a-config-map-with-your-tosca-template">Create a config map with your tosca template</h3>
 <p>Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.</p>
 <blockquote>
 <p>More complex examples and documentation for setting up end-to-end application can be found <a href="https://dodas-ts.github.io/dodas-templates/">here</a></p>
 </blockquote>
-<p>First save the content below into <code>test-deployment.yaml</code> and fill up the fields between <code>&lt;&gt;</code>.</p>
-<pre><code class="yaml">tosca_definitions_version: tosca_simple_yaml_1_0
+<p>First save the content below into <code class="codehilite">test-deployment.yaml</code> and fill up the fields between <code class="codehilite">&lt;&gt;</code>.</p>
+<div class="codehilite"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tosca_definitions_version</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca_simple_yaml_1_0</span>
 
-imports:
-  - dodas_types: https://raw.githubusercontent.com/dodas-ts/dodas-templates/master/tosca-types/dodas_types.yml
+<span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">dodas_types</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://raw.githubusercontent.com/dodas-ts/dodas-templates/master/tosca-types/dodas_types.yml</span>
 
-description: TOSCA template for a complete CMS computing cluster on top of K8s orchestrator
+<span class="l l-Scalar l-Scalar-Plain">description</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">TOSCA template for a complete CMS computing cluster on top of K8s orchestrator</span>
 
-topology_template:
-  inputs:
-    number_of_masters:
-      type: integer
-      default: 1
+<span class="l l-Scalar l-Scalar-Plain">topology_template</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">inputs</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">number_of_masters</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">integer</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
 
-    num_cpus_master:
-      type: integer
-      default: 4
+    <span class="l l-Scalar l-Scalar-Plain">num_cpus_master</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">integer</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
 
-    mem_size_master:
-      type: string
-      default: &quot;8 GB&quot;
+    <span class="l l-Scalar l-Scalar-Plain">mem_size_master</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">string</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="s">&quot;8</span><span class="nv"> </span><span class="s">GB&quot;</span>
 
-    number_of_slaves:
-      type: integer
-      default: 1
+    <span class="l l-Scalar l-Scalar-Plain">number_of_slaves</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">integer</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
 
-    num_cpus_slave:
-      type: integer
-      default: 4
+    <span class="l l-Scalar l-Scalar-Plain">num_cpus_slave</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">integer</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">4</span>
 
-    mem_size_slave:
-      type: string
-      default: &quot;8 GB&quot;
+    <span class="l l-Scalar l-Scalar-Plain">mem_size_slave</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">string</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="s">&quot;8</span><span class="nv"> </span><span class="s">GB&quot;</span>
 
-    server_image:
-      type: string
-      default: &lt;your image here&gt;
-      # e.g. &quot;ost://cloud.recas.ba.infn.it/1113d7e8-fc5d-43b9-8d26-61906d89d479&quot;
+    <span class="l l-Scalar l-Scalar-Plain">server_image</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">string</span>
+      <span class="l l-Scalar l-Scalar-Plain">default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;your image here&gt;</span>
+      <span class="c1"># e.g. &quot;ost://cloud.recas.ba.infn.it/1113d7e8-fc5d-43b9-8d26-61906d89d479&quot;</span>
 
-  node_templates:
-    k8s_master:
-      type: tosca.nodes.DODAS.FrontEnd.Kubernetes
-      properties:
-        admin_token: testme
-      requirements:
-        - host: k8s-master-server
+  <span class="l l-Scalar l-Scalar-Plain">node_templates</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">k8s_master</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca.nodes.DODAS.FrontEnd.Kubernetes</span>
+      <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">admin_token</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">testme</span>
+      <span class="l l-Scalar l-Scalar-Plain">requirements</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">k8s-master-server</span>
 
-    k8s_slave:
-      type: tosca.nodes.DODAS.WorkerNode.Kubernetes
-      properties:
-        front_end_ip: { get_attribute: [k8s-master-server, private_address, 0] }
-      requirements:
-        - host: k8s-slave-server
+    <span class="l l-Scalar l-Scalar-Plain">k8s_slave</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca.nodes.DODAS.WorkerNode.Kubernetes</span>
+      <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">front_end_ip</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_attribute</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">k8s-master-server</span><span class="p p-Indicator">,</span> <span class="nv">private_address</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">}</span>
+      <span class="l l-Scalar l-Scalar-Plain">requirements</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">k8s-slave-server</span>
 
-    k8s-master-server:
-      type: tosca.nodes.indigo.Compute
-      capabilities:
-        endpoint:
-          properties:
-            network_name: PUBLIC
-            ports:
-              dashboard:
-                protocol: tcp
-                source: 30443
-        scalable:
-          properties:
-            count: { get_input: number_of_masters }
-        host:
-          properties:
-            num_cpus: { get_input: num_cpus_master }
-            mem_size: { get_input: mem_size_master }
-        os:
-          properties:
-            image: { get_input: server_image }
+    <span class="l l-Scalar l-Scalar-Plain">k8s-master-server</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca.nodes.indigo.Compute</span>
+      <span class="l l-Scalar l-Scalar-Plain">capabilities</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">endpoint</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">network_name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">PUBLIC</span>
+            <span class="l l-Scalar l-Scalar-Plain">ports</span><span class="p p-Indicator">:</span>
+              <span class="l l-Scalar l-Scalar-Plain">dashboard</span><span class="p p-Indicator">:</span>
+                <span class="l l-Scalar l-Scalar-Plain">protocol</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tcp</span>
+                <span class="l l-Scalar l-Scalar-Plain">source</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">30443</span>
+        <span class="l l-Scalar l-Scalar-Plain">scalable</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">count</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">number_of_masters</span> <span class="p p-Indicator">}</span>
+        <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">num_cpus</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">num_cpus_master</span> <span class="p p-Indicator">}</span>
+            <span class="l l-Scalar l-Scalar-Plain">mem_size</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">mem_size_master</span> <span class="p p-Indicator">}</span>
+        <span class="l l-Scalar l-Scalar-Plain">os</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">server_image</span> <span class="p p-Indicator">}</span>
 
-    k8s-slave-server:
-      type: tosca.nodes.indigo.Compute
-      capabilities:
-        endpoint:
-          properties:
-            network_name: PRIVATE
-        scalable:
-          properties:
-            count: { get_input: number_of_slaves }
-        host:
-          properties:
-            num_cpus: { get_input: num_cpus_slave }
-            mem_size: { get_input: mem_size_slave }
-        os:
-          properties:
-            image: { get_input: server_image }
+    <span class="l l-Scalar l-Scalar-Plain">k8s-slave-server</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca.nodes.indigo.Compute</span>
+      <span class="l l-Scalar l-Scalar-Plain">capabilities</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">endpoint</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">network_name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">PRIVATE</span>
+        <span class="l l-Scalar l-Scalar-Plain">scalable</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">count</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">number_of_slaves</span> <span class="p p-Indicator">}</span>
+        <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">num_cpus</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">num_cpus_slave</span> <span class="p p-Indicator">}</span>
+            <span class="l l-Scalar l-Scalar-Plain">mem_size</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">mem_size_slave</span> <span class="p p-Indicator">}</span>
+        <span class="l l-Scalar l-Scalar-Plain">os</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">properties</span><span class="p p-Indicator">:</span>
+            <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span> <span class="nv">get_input</span><span class="p p-Indicator">:</span> <span class="nv">server_image</span> <span class="p p-Indicator">}</span>
 
-  outputs:
-    k8s_endpoint:
-      value:
-        {
-          concat:
-            [
-              &quot;https://&quot;,
-              get_attribute: [k8s-master-server, public_address, 0],
-              &quot;:30443&quot;,
-            ],
-        }
-</code></pre>
+  <span class="l l-Scalar l-Scalar-Plain">outputs</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">k8s_endpoint</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">value</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">{</span>
+          <span class="nv">concat</span><span class="p p-Indicator">:</span>
+            <span class="p p-Indicator">[</span>
+              <span class="s">&quot;https://&quot;</span><span class="p p-Indicator">,</span>
+              <span class="nv">get_attribute</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">k8s-master-server</span><span class="p p-Indicator">,</span> <span class="nv">public_address</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">],</span>
+              <span class="s">&quot;:30443&quot;</span><span class="p p-Indicator">,</span>
+            <span class="p p-Indicator">],</span>
+        <span class="p p-Indicator">}</span>
+</pre></div>
 
 <p>Then you can save it as Kubernetes ConfigMap (also for later use) with:</p>
-<pre><code class="bash">kubectl create configmap mytemplate --from-file=test-deployment.yaml
-</code></pre>
+<div class="codehilite"><pre><span></span>kubectl create configmap mytemplate --from-file<span class="o">=</span>test-deployment.yaml
+</pre></div>
 
 <h3 id="test-a-deployment">Test a deployment</h3>
-<p>Create a manifest <code>my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.</p>
+<p>Create a manifest <code class="codehilite">my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.</p>
 <blockquote>
 <p>The sintax used is similar to what used for dodas client <a href="https://dodas-ts.github.io/dodas-go-client/">here</a></p>
 </blockquote>
-<pre><code class="yaml">apiVersion: dodas.infn.it/v1alpha1
-kind: Infrastructure
-metadata:
-  name: example-infrastructure
-spec:
-  name: test-infra
-  template: mytemplate
-  cloud:
-    id: ost
-    type: OpenStack
-    username: indigo-dc
-    password: &lt;your IAM token here&gt;
-    host: https://cloud.recas.ba.infn.it:5000/
-    tenant: oidc
-    auth_version: 3.x_oidc_access_token
-    service_region: recas-cloud
-  im:
-    id: im
-    type: InfrastructureManager
-    host: https://im-dodas.cloud.cnaf.infn.it/infrastructures
-    token: &lt;your IAM token here&gt;
-  # If you want to use IAM for token exchange
-  allowrefresh:
-    client_id: &lt;exchange token client id&gt;
-    client_secret: &lt;exchange token client token&gt;
-    iam_endpoint: https://dodas-iam.cloud.cnaf.infn.it/token
-</code></pre>
+<div class="codehilite"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">dodas.infn.it/v1alpha1</span>
+<span class="l l-Scalar l-Scalar-Plain">kind</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Infrastructure</span>
+<span class="l l-Scalar l-Scalar-Plain">metadata</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">example-infrastructure</span>
+<span class="l l-Scalar l-Scalar-Plain">spec</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">test-infra</span>
+  <span class="l l-Scalar l-Scalar-Plain">template</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mytemplate</span>
+  <span class="l l-Scalar l-Scalar-Plain">cloud</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">id</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ost</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">OpenStack</span>
+    <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">indigo-dc</span>
+    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;your IAM token here&gt;</span>
+    <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://cloud.recas.ba.infn.it:5000/</span>
+    <span class="l l-Scalar l-Scalar-Plain">tenant</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">oidc</span>
+    <span class="l l-Scalar l-Scalar-Plain">auth_version</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3.x_oidc_access_token</span>
+    <span class="l l-Scalar l-Scalar-Plain">service_region</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">recas-cloud</span>
+  <span class="l l-Scalar l-Scalar-Plain">im</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">id</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">im</span>
+    <span class="l l-Scalar l-Scalar-Plain">type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">InfrastructureManager</span>
+    <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://im-dodas.cloud.cnaf.infn.it/infrastructures</span>
+    <span class="l l-Scalar l-Scalar-Plain">token</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;your IAM token here&gt;</span>
+  <span class="c1"># If you want to use IAM for token exchange</span>
+  <span class="l l-Scalar l-Scalar-Plain">allowrefresh</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">client_id</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;exchange token client id&gt;</span>
+    <span class="l l-Scalar l-Scalar-Plain">client_secret</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;exchange token client token&gt;</span>
+    <span class="l l-Scalar l-Scalar-Plain">iam_endpoint</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://dodas-iam.cloud.cnaf.infn.it/token</span>
+</pre></div>
 
 <p>Then create the resource in kubernetes with:</p>
-<pre><code class="bash">kubectl apply -f my-infra.yml
-</code></pre>
+<div class="codehilite"><pre><span></span>kubectl apply -f my-infra.yml
+</pre></div>
 
 <p>If everything went well you should be able to see you InfrastructureID of the deployment appearing here:</p>
-<pre><code class="bash">kubectl get infrastructures
-</code></pre>
+<div class="codehilite"><pre><span></span>kubectl get infrastructures
+</pre></div>
 
-<pre><code class="text">NAME                     INFID                                  STATUS
+<div class="codehilite"><pre><span></span>NAME                     INFID                                  STATUS
 example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
-</code></pre>
+</pre></div>
 
 <h3 id="destroy-the-deployment">Destroy the deployment</h3>
 <p>Just type:</p>
-<pre><code class="bash">kubectl delete infrastructure example-infrastructure
-</code></pre>
+<div class="codehilite"><pre><span></span>kubectl delete infrastructure example-infrastructure
+</pre></div>
 
-<pre><code class="text">infrastructure.dodas.infn.it &quot;example-infrastructure&quot; deleted
-</code></pre>
+<div class="codehilite"><pre><span></span>infrastructure.dodas.infn.it &quot;example-infrastructure&quot; deleted
+</pre></div>
                 
                   
                 
@@ -681,6 +681,15 @@ example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
           Material for MkDocs</a>
       </div>
       
+  <div class="md-footer-social">
+    <link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+    
+      <a href="https://github.com/DODAS-TS" class="md-footer-social__link fa fa-github"></a>
+    
+      <a href="https://dodas-infn.slack.com/archives/CAJ6VG71A" class="md-footer-social__link fa fa-slack"></a>
+    
+  </div>
+
     </div>
   </div>
 </footer>
