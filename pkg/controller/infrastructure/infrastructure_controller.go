@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	dodas "github.com/dodas-ts/dodas-go-client/cmd"
+	dodas "github.com/dodas-ts/dodas-go-client/pkg/utils"
 	dodasv1alpha1 "github.com/dodas-ts/dodas-operator/pkg/apis/dodas/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
