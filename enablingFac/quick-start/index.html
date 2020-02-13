@@ -456,21 +456,24 @@ kubectl apply -f deploy/role_binding.yaml
 kubectl apply -f deploy/operator.yaml
 </pre></div>
 
+
 <p>And then just check if everythin went fine with:</p>
 <div class="codehilite"><pre><span></span>kubectl get pod
 </pre></div>
+
 
 <div class="codehilite"><pre><span></span># kubectl get pod
 NAME                              READY   STATUS    RESTARTS   AGE
 dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
 </pre></div>
 
+
 <h3 id="create-a-config-map-with-your-tosca-template">Create a config map with your tosca template</h3>
 <p>Let's first try with a simple deployment of a 2 VMs k8s cluster on openstack resources.</p>
 <blockquote>
 <p>More complex examples and documentation for setting up end-to-end application can be found <a href="https://dodas-ts.github.io/dodas-templates/">here</a></p>
 </blockquote>
-<p>First save the content below into <code class="codehilite">test-deployment.yaml</code> and fill up the fields between <code class="codehilite">&lt;&gt;</code>.</p>
+<p>First save the content below into <code>test-deployment.yaml</code> and fill up the fields between <code>&lt;&gt;</code>.</p>
 <div class="codehilite"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">tosca_definitions_version</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tosca_simple_yaml_1_0</span>
 
 <span class="l l-Scalar l-Scalar-Plain">imports</span><span class="p p-Indicator">:</span>
@@ -575,12 +578,14 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
         <span class="p p-Indicator">}</span>
 </pre></div>
 
+
 <p>Then you can save it as Kubernetes ConfigMap (also for later use) with:</p>
 <div class="codehilite"><pre><span></span>kubectl create configmap mytemplate --from-file<span class="o">=</span>test-deployment.yaml
 </pre></div>
 
+
 <h3 id="test-a-deployment">Test a deployment</h3>
-<p>Create a manifest <code class="codehilite">my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.</p>
+<p>Create a manifest <code>my-infra.yml</code> with DODAS Infrastructure resource specifying the credentials for both the cloud provider and the InfrastructureManager.</p>
 <blockquote>
 <p>The sintax used is similar to what used for dodas client <a href="https://dodas-ts.github.io/dodas-go-client/">here</a></p>
 </blockquote>
@@ -612,22 +617,27 @@ dodas-operator-6ff5cbc4ff-kxttr   1/1     Running   0          10s
     <span class="l l-Scalar l-Scalar-Plain">iam_endpoint</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://dodas-iam.cloud.cnaf.infn.it/token</span>
 </pre></div>
 
+
 <p>Then create the resource in kubernetes with:</p>
 <div class="codehilite"><pre><span></span>kubectl apply -f my-infra.yml
 </pre></div>
+
 
 <p>If everything went well you should be able to see you InfrastructureID of the deployment appearing here:</p>
 <div class="codehilite"><pre><span></span>kubectl get infrastructures
 </pre></div>
 
+
 <div class="codehilite"><pre><span></span>NAME                     INFID                                  STATUS
 example-infrastructure   9ca8a2ee-41ba-11ea-8ea8-0242ac150003   created
 </pre></div>
+
 
 <h3 id="destroy-the-deployment">Destroy the deployment</h3>
 <p>Just type:</p>
 <div class="codehilite"><pre><span></span>kubectl delete infrastructure example-infrastructure
 </pre></div>
+
 
 <div class="codehilite"><pre><span></span>infrastructure.dodas.infn.it &quot;example-infrastructure&quot; deleted
 </pre></div>
