@@ -18,7 +18,7 @@ If you want to contibute please consider the following
 
 ## Components
 
-![dodas operator components](https://raw.githubusercontent.com/DODAS-TS/dodas-operator/master/docs/img/dodas-operator.png)
+[![dodas operator components](https://raw.githubusercontent.com/DODAS-TS/dodas-operator/master/docs/img/dodas-operator.png)](https://raw.githubusercontent.com/DODAS-TS/dodas-operator/master/docs/img/dodas-operator.png)
 
 ### Dev Requirements
 
