@@ -16,6 +16,10 @@ To start playing with the operatori we provide a quick start guide with two opti
 
 If you want to contibute please consider the following
 
+## Components
+
+![dodas operator components](https://raw.githubusercontent.com/DODAS-TS/dodas-operator/master/docs/img/dodas-operator.png)
+
 ### Dev Requirements
 
 - go > 1.12
